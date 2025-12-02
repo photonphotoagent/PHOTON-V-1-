@@ -1,5 +1,5 @@
 import { GoogleGenAI, Modality, Chat, Type } from "@google/genai";
-import { AnalysisResult } from "../types";
+import { AnalysisResult, Workflow, ShotConcept } from "../types";
 
 const API_KEY = process.env.API_KEY;
 if (!API_KEY) {
@@ -17,29 +17,34 @@ const fileToGenerativePart = (base64: string, mimeType: string) => {
   };
 };
 
-const AI_CURATOR_INSTRUCTIONS = `You are a world-renowned photo critic and editor for a prestigious art magazine, known for your sharp, insightful, and brutally honest critiques. Your analysis goes beyond the surface, dissecting every element of an image with professional terminology and a deep understanding of photographic art and commerce. Your output MUST be a single JSON object that strictly adheres to the provided schema. No other text, commentary, or explanation should be provided outside of this JSON block.
+// StoryBrand Guide Persona: A trusted mentor, clear, encouraging but honest.
+const AI_CURATOR_INSTRUCTIONS = `You are a world-class Creative Director and Mentor acting as a trusted guide for a photographer. Your goal is to help them succeed commercially and artistically. Your tone should be professional, encouraging, but brutally honest about what needs to improve to sell this work. You are not just a critic; you are a partner in their success.
 
-Scoring System: Scale of 1-99. All four sub-scores and the final overall score must be integers between 1 and 99.
+Your output MUST be a single JSON object that strictly adheres to the provided schema. No other text.
 
-Curation Insights (Detailed Critique):
-This is the most critical section. Provide a detailed, expert critique broken into three specific areas. Be specific and use professional terminology.
-- composition_and_framing: Analyze the rule of thirds, leading lines, framing, balance, and overall compositional harmony or intentional disharmony. Discuss how the crop impacts the image's narrative and flow. Mention negative space and subject placement.
-- lighting_and_color: Critique the quality and direction of light (e.g., soft, hard, diffused, Rembrandt). Analyze the color palette, harmony, and temperature (e.g., 'The analogous color scheme of blues and greens creates a serene mood'). Mention technical issues like blown highlights, crushed shadows, chromatic aberration, or color casts.
-- subject_and_narrative: Evaluate the power of the subject matter. Does it tell a story? Does it evoke an emotional response? Discuss the focus, the moment captured, its narrative weight, and its potential for interpretation.
+Scoring System (0-99):
+- monetization: How likely is this to sell on stock/print sites?
+- social: How shareable/viral is this?
+- portfolio: Is this artistic, portfolio-grade work?
+- technical_quality: Sharpness, lighting, noise.
 
-Social Media & Edit Strategy:
-Generate a 'social_media_strategy' object containing:
-- suggested_edits: An array of 2-3 unique and professional editing suggestions tailored specifically to the image provided. Avoid generic advice. Suggestions should cover a range of techniques (e.g., 'Apply a cinematic teal and orange color grade', 'Use a tone curve to create a soft, matte finish', 'Dodge and burn to add dimension').
-- social_media_appeal: A single sentence summarizing the image's appeal for social platforms.
-- sample_posts: An array of 2 sample posts for relevant platforms (e.g., Instagram, Pinterest).
+Social Strategy:
+- hashtag_groups: Separate tags into 'niche' (specific subject), 'viral' (trending now), and 'broad' (general photography).
 
-Market Comparison:
-Provide a 'market_comparison' object. This must be an array of 2-3 descriptions of similar, top-performing images in the target market (e.g., stock photography, print-on-demand). For each, provide a 'description' of the competing image's subject and style, and a 'reasoning' for its commercial success.`;
+Creative Remixes (The Transformation):
+- Generate 4 distinct creative concepts to transform this image, covering different goals.
+- Category 'Social': Viral aesthetics (e.g. "Y2K", "Glitch", "Vaporwave", "Cinematic").
+- Category 'Commercial': Clean, stock-photo ready styles (e.g. "Bright & Airy", "Corporate Minimal", "Studio Lighting").
+- Category 'Artistic': Fine art styles for print (e.g. "Charcoal Sketch", "Impressionist", "Double Exposure").
+- Category 'Fantasy': Bold transformations (e.g. "Cyberpunk", "Post-Apocalyptic", "Ethereal").
+
+Market Comparison (The Reality Check):
+- Explain why similar images sell. Be specific about the "Why".`;
 
 
 export const analyzeImage = async (imageBase64: string, mimeType: string): Promise<AnalysisResult> => {
     const imagePart = fileToGenerativePart(imageBase64, mimeType);
-    const textPart = { text: "Analyze the provided image based on your system instructions." };
+    const textPart = { text: "Analyze this image. Guide me on how to improve and sell it." };
     
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
@@ -50,16 +55,15 @@ export const analyzeImage = async (imageBase64: string, mimeType: string): Promi
           responseSchema: {
             type: Type.OBJECT,
             properties: {
-              monetization_score: {
+              scores: {
                 type: Type.OBJECT,
                 properties: {
-                  overall: { type: Type.NUMBER },
-                  technical_quality_score: { type: Type.NUMBER },
-                  commercial_appeal_score: { type: Type.NUMBER },
-                  market_rarity_score: { type: Type.NUMBER },
-                  emotional_resonance_score: { type: Type.NUMBER },
+                  monetization: { type: Type.NUMBER },
+                  social: { type: Type.NUMBER },
+                  portfolio: { type: Type.NUMBER },
+                  technical_quality: { type: Type.NUMBER },
                 },
-                required: ['overall', 'technical_quality_score', 'commercial_appeal_score', 'market_rarity_score', 'emotional_resonance_score'],
+                required: ['monetization', 'social', 'portfolio', 'technical_quality'],
               },
               monetization_strategy: {
                 type: Type.OBJECT,
@@ -109,8 +113,31 @@ export const analyzeImage = async (imageBase64: string, mimeType: string): Promi
                       required: ['platform', 'post_text'],
                     }
                   },
+                  hashtag_groups: {
+                      type: Type.OBJECT,
+                      properties: {
+                          niche: { type: Type.ARRAY, items: { type: Type.STRING } },
+                          viral: { type: Type.ARRAY, items: { type: Type.STRING } },
+                          broad: { type: Type.ARRAY, items: { type: Type.STRING } }
+                      },
+                      required: ['niche', 'viral', 'broad']
+                  }
                 },
-                required: ['suggested_edits', 'social_media_appeal', 'sample_posts'],
+                required: ['suggested_edits', 'social_media_appeal', 'sample_posts', 'hashtag_groups'],
+              },
+              creative_remixes: {
+                type: Type.ARRAY,
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        title: { type: Type.STRING },
+                        description: { type: Type.STRING },
+                        prompt: { type: Type.STRING },
+                        vibe: { type: Type.STRING },
+                        category: { type: Type.STRING, enum: ['Social', 'Commercial', 'Artistic', 'Fantasy'] }
+                    },
+                    required: ['title', 'description', 'prompt', 'vibe', 'category']
+                }
               },
               market_comparison: {
                 type: Type.ARRAY,
@@ -124,7 +151,7 @@ export const analyzeImage = async (imageBase64: string, mimeType: string): Promi
                 }
               }
             },
-            required: ['monetization_score', 'monetization_strategy', 'curation_insights', 'social_media_strategy', 'market_comparison'],
+            required: ['scores', 'monetization_strategy', 'curation_insights', 'social_media_strategy', 'market_comparison', 'creative_remixes'],
           }
         }
     });
@@ -188,20 +215,136 @@ export const upscaleImage = async (imageBase64: string, mimeType: string): Promi
     return imageBase64;
 };
 
-
 export const createChat = (): Chat => {
     return ai.chats.create({
         model: 'gemini-2.5-flash',
     });
 };
 
-export const getDeepThoughtResponse = async (prompt: string): Promise<string> => {
+export const generateWorkflowFromPrompt = async (userPrompt: string): Promise<Workflow> => {
+    const prompt = `You are a Route Architect helping a creator build a business.
+    The user wants to save time on this task: "${userPrompt}".
+    
+    Create a pragmatic, step-by-step "Route" (workflow) to achieve this.
+    Crucially, you must distinguish between steps the SYSTEM (AI/API) can do automatically, and steps the HUMAN (User) must perform physically or creatively.
+    
+    - 'system': Upscaling, tagging, posting to API, sending email, generating text.
+    - 'human': Taking the photo, shipping a physical product, signing a contract, meeting a client.
+    
+    Return a JSON object strictly adhering to the schema.`;
+
     const response = await ai.models.generateContent({
-        model: 'gem-2.5-pro',
+        model: 'gemini-2.5-flash',
         contents: prompt,
         config: {
-            thinkingConfig: { thinkingBudget: 32768 }
-        },
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                    id: { type: Type.STRING },
+                    title: { type: Type.STRING, description: "A short, catchy title for the Route" },
+                    description: { type: Type.STRING, description: "A brief summary of what this Route does" },
+                    steps: {
+                        type: Type.ARRAY,
+                        items: {
+                            type: Type.OBJECT,
+                            properties: {
+                                id: { type: Type.STRING },
+                                name: { type: Type.STRING, description: "Name of the step" },
+                                description: { type: Type.STRING, description: "Details about this step" },
+                                actor: { type: Type.STRING, enum: ['system', 'human'] },
+                                status: { type: Type.STRING, enum: ['pending'] }, // Always start as pending
+                                icon: { type: Type.STRING, description: "One of: 'upload', 'ai', 'edit', 'market', 'social', 'mail', 'check'" }
+                            },
+                            required: ['id', 'name', 'description', 'actor', 'status', 'icon']
+                        }
+                    },
+                    isActive: { type: Type.BOOLEAN },
+                    progress: { type: Type.NUMBER }
+                },
+                required: ['id', 'title', 'description', 'steps', 'isActive', 'progress']
+            }
+        }
     });
-    return response.text;
+
+    try {
+        const jsonText = response.text.trim();
+        const workflow = JSON.parse(jsonText) as Workflow;
+        // Initialize logs
+        workflow.logs = [];
+        return workflow;
+    } catch (e) {
+        console.error("Failed to parse workflow JSON:", e);
+        throw new Error("Failed to generate workflow.");
+    }
+};
+
+/**
+ * Simulates the execution of a step by asking the AI to generate a realistic log message/result.
+ */
+export const executeWorkflowStep = async (stepName: string, stepDescription: string, actor: 'human' | 'system'): Promise<string> => {
+    const prompt = `You are the system kernel for an AI photography agent.
+    You are currently processing the step: "${stepName}" (${stepDescription}).
+    The actor for this step is: ${actor.toUpperCase()}.
+    
+    If actor is SYSTEM: Generate a realistic, technical, and brief system log output (e.g., "API Response: 200 OK").
+    If actor is HUMAN: Generate a log indicating the system is waiting for or verifying the user's action (e.g., "Waiting for user input...", "Verified user upload.").
+    
+    Do not use markdown. Just the plain log text.`;
+
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+    });
+
+    return response.text.trim();
+};
+
+export const generateShotConcepts = async (
+    inputs: { subject: string; location: string; mood: string; lighting: string }
+): Promise<ShotConcept[]> => {
+    const prompt = `You are a high-concept Creative Director for photography. 
+    The photographer wants to shoot a "${inputs.subject}" in a "${inputs.location}" with "${inputs.mood}" vibes and "${inputs.lighting}" lighting.
+    
+    Based on these "mad libs" style inputs, generate 3 distinct, high-quality photography concepts.
+    They should be practical but creative.
+    
+    Return a JSON object with a list of concepts strictly adhering to the schema.`;
+
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                    concepts: {
+                        type: Type.ARRAY,
+                        items: {
+                            type: Type.OBJECT,
+                            properties: {
+                                title: { type: Type.STRING },
+                                visual_description: { type: Type.STRING, description: "A vivid description of the shot." },
+                                technical_specs: { type: Type.STRING, description: "Recommended lens, aperture, shutter, ISO, etc." },
+                                art_direction: { type: Type.STRING, description: "Posing, props, color palette advice." },
+                                difficulty: { type: Type.STRING, enum: ['Easy', 'Medium', 'Hard'] }
+                            },
+                            required: ['title', 'visual_description', 'technical_specs', 'art_direction', 'difficulty']
+                        }
+                    }
+                },
+                required: ['concepts']
+            }
+        }
+    });
+
+    try {
+        const jsonText = response.text.trim();
+        const result = JSON.parse(jsonText) as { concepts: ShotConcept[] };
+        return result.concepts;
+    } catch (e) {
+        console.error("Failed to parse shot concepts JSON:", e);
+        throw new Error("Failed to generate shot concepts.");
+    }
 };
