@@ -1,12 +1,11 @@
-
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { AppView, ChatMessage as ChatMessageType, AnalysisResult, ImageData, ActiveImage, Connections, PlatformName, DistributionStatus, DistributionResult, Platform, User, Workflow, WorkflowStep, EditHistoryItem, ImageAdjustments, CalendarEvent, ShotConcept } from './types';
+import { AppView, ChatMessage as ChatMessageType, AnalysisResult, ImageData, ActiveImage, Connections, PlatformName, DistributionStatus, DistributionResult, Platform, User, Workflow, WorkflowStep, EditHistoryItem, ImageAdjustments, CalendarEvent, ShotConcept, RouteChatMessage } from './types';
 import * as GeminiService from './services/geminiService';
 import * as DistributionService from './services/distributionService';
 import * as AuthService from './services/authService';
 import * as StorageService from './services/storageService';
 import { Spinner } from './components/Spinner';
-import { LightBoxIcon, ChatIcon, EditIcon, StudioIcon, CheckCircleIcon, XCircleIcon, WrenchScrewdriverIcon, InstagramIcon, PinterestIcon, LinkedInIcon, ShoppingCartIcon, DollarSignIcon, SettingsIcon, DownloadIcon, SparklesIcon, ScissorsIcon, PaintBrushIcon, ArrowsPointingOutIcon, RectangleStackIcon, ChartBarIcon, ViewfinderIcon, SunIcon, BookOpenIcon, BoltIcon, PuzzlePieceIcon, ArrowRightIcon, PlayIcon, StopIcon, CheckBadgeIcon, GoogleIcon, EyeIcon, ArrowDownTrayIcon, ArrowTrendingUpIcon, ArrowPathIcon, PhotoIcon, AdjustmentsIcon, SwatchIcon, ApertureIcon, MapIcon, UserIcon, SplitToningIcon, CurvesIcon, EyeDropperIcon, BeakerIcon } from './components/icons';
+import { LightBoxIcon, ChatIcon, EditIcon, StudioIcon, CheckCircleIcon, XCircleIcon, WrenchScrewdriverIcon, InstagramIcon, PinterestIcon, LinkedInIcon, ShoppingCartIcon, DollarSignIcon, SettingsIcon, DownloadIcon, SparklesIcon, ScissorsIcon, PaintBrushIcon, ArrowsPointingOutIcon, RectangleStackIcon, ChartBarIcon, ViewfinderIcon, SunIcon, BookOpenIcon, BoltIcon, PuzzlePieceIcon, ArrowRightIcon, PlayIcon, StopIcon, CheckBadgeIcon, GoogleIcon, EyeIcon, ArrowDownTrayIcon, ArrowTrendingUpIcon, ArrowPathIcon, PhotoIcon, AdjustmentsIcon, SwatchIcon, ApertureIcon, MapIcon, UserIcon, SplitToningIcon, CurvesIcon, EyeDropperIcon, BeakerIcon, BrushIcon, EraserIcon, ArrowUpTrayIcon, ChatBubbleLeftRightIcon, PaperClipIcon } from './components/icons';
 import { Chat } from '@google/genai';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { EarningsDashboard } from './components/EarningsDashboard';
@@ -59,14 +58,54 @@ const downloadImage = (base64: string, filename: string) => {
 
 // --- Reusable UI Components ---
 
+const ProgressBar: React.FC<{ label?: string }> = ({ label = "Processing..." }) => {
+    const [progress, setProgress] = useState(5);
+
+    useEffect(() => {
+        // Simulate progress: Fast start, then slow down
+        const timer = setInterval(() => {
+            setProgress((oldProgress) => {
+                if (oldProgress === 100) return 100;
+                const diff = Math.random() * 10;
+                // Slow down as we get higher
+                const increment = diff * (1 - oldProgress / 100);
+                return Math.min(oldProgress + increment, 95);
+            });
+        }, 200);
+
+        return () => {
+            clearInterval(timer);
+        };
+    }, []);
+
+    return (
+        <div className="w-full max-w-xs p-4 bg-gray-900/90 backdrop-blur-md rounded-xl border border-white/10 shadow-2xl animate-fade-in z-50">
+            <div className="flex justify-between mb-2">
+                <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider">{label}</span>
+                <span className="text-xs font-mono text-gray-400">{Math.round(progress)}%</span>
+            </div>
+            <div className="w-full bg-gray-700/50 rounded-full h-1.5 overflow-hidden">
+                <div 
+                    className="bg-gradient-to-r from-indigo-500 to-purple-500 h-1.5 rounded-full transition-all duration-200 ease-out relative" 
+                    style={{ width: `${progress}%` }}
+                >
+                    <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 interface ImageUploaderProps {
   onImageUpload: (data: ImageData) => void;
   imagePreview: string | null;
   isLoading: boolean;
   promptText?: string;
+  showAnalyzeButton?: boolean;
+  onAnalyzeClick?: () => void;
 }
 
-const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUpload, imagePreview, isLoading, promptText = "Drop your work here to begin." }) => {
+const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUpload, imagePreview, isLoading, promptText = "Drop your work here to begin.", showAnalyzeButton = false, onAnalyzeClick }) => {
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -85,15 +124,28 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUpload, imagePrevi
       <input type="file" accept="image/*" className="hidden" id="image-upload" onChange={handleFileChange} disabled={isLoading}/>
       <label htmlFor="image-upload" className="cursor-pointer w-full h-full flex flex-col items-center justify-center p-8 z-10">
         {imagePreview ? (
-          <div className="relative w-full h-full flex items-center justify-center">
-              <img src={imagePreview} alt="Preview" className={`max-h-[80vh] rounded-lg transition-opacity ${isLoading ? 'opacity-30 blur-sm' : 'opacity-100'} shadow-2xl border border-white/10`} />
+          <div className="relative w-full h-full flex flex-col items-center justify-center">
+              <img src={imagePreview} alt="Preview" className={`max-h-[70vh] rounded-lg transition-opacity ${isLoading ? 'opacity-30 blur-sm' : 'opacity-100'} shadow-2xl border border-white/10`} />
+              
               {isLoading && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <div className="w-20 h-20 bg-black/60 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/10 shadow-xl">
-                         <Spinner />
-                    </div>
-                    <p className="mt-4 text-xl font-display font-bold text-white tracking-wide animate-pulse drop-shadow-lg">Initializing Analysis...</p>
+                    <ProgressBar label="Analyzing..." />
                 </div>
+              )}
+
+              {/* Manual Analyze Button Overlay */}
+              {showAnalyzeButton && !isLoading && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm rounded-lg">
+                      <button 
+                        onClick={(e) => {
+                            e.preventDefault();
+                            onAnalyzeClick?.();
+                        }}
+                        className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-indigo-500/30 flex items-center gap-2 transform hover:scale-105 transition-all text-lg border border-white/10"
+                      >
+                          <BoltIcon className="w-6 h-6" /> Analyze Now
+                      </button>
+                  </div>
               )}
           </div>
         ) : (
@@ -245,45 +297,72 @@ const LightBoxView: React.FC<{
   onPortfolioUpdate: (image: ActiveImage) => void;
   onNavigateToStudio: () => void;
   onSelectApiKey: () => void;
-}> = ({ activeImage, setActiveImage, switchToEditView, connections, isApiKeySelected, setIsApiKeySelected, onPortfolioUpdate, onNavigateToStudio, onSelectApiKey }) => {
+  onUploadNew: () => void;
+}> = ({ activeImage, setActiveImage, switchToEditView, connections, isApiKeySelected, setIsApiKeySelected, onPortfolioUpdate, onNavigateToStudio, onSelectApiKey, onUploadNew }) => {
   const [editingState, setEditingState] = useState({ isEditing: false, suggestion: '' });
   const [distributionStatus, setDistributionStatus] = useState<DistributionStatus[]>([]);
   const [distributionResult, setDistributionResult] = useState<DistributionResult | null>(null);
 
+  // Core analysis logic refactored for reuse
+  const performAnalysis = useCallback(async (imageData: ImageData, imageId: string) => {
+      // If already analyzing, don't trigger again (prevent double calls if logic loops)
+      // Note: The caller should ensure loading state is set.
+
+      try {
+          const analysisResult = await GeminiService.analyzeImage(imageData.base64, imageData.mimeType);
+          
+          setActiveImage(prev => {
+             // Ensure we are updating the correct image context
+             if (prev?.id === imageId) {
+                 const updatedImage = {
+                     ...prev,
+                     analysis: analysisResult,
+                     isAnalyzed: true,
+                     isLoading: false,
+                 };
+                 onPortfolioUpdate(updatedImage);
+                 return updatedImage;
+             }
+             return prev;
+          });
+
+      } catch (error) {
+          console.error("Error analyzing image:", error);
+          setActiveImage(prev => {
+              if (prev?.id === imageId) {
+                  return { ...prev, isLoading: false, analysis: null };
+              }
+              return prev;
+          });
+      }
+  }, [setActiveImage, onPortfolioUpdate]);
+
+  // Handle new file uploads
   const handleImageUpload = async (imageData: ImageData) => {
     const imageId = Date.now().toString();
     
-    let currentImage: ActiveImage = {
+    const currentImage: ActiveImage = {
       id: imageId,
       data: imageData,
       analysis: null,
       isAnalyzed: false,
-      isLoading: true
+      isLoading: true // Start loading immediately
     };
     setActiveImage(currentImage);
     setDistributionResult(null);
     setDistributionStatus([]);
 
-    try {
-      const analysisResult = await GeminiService.analyzeImage(imageData.base64, imageData.mimeType);
-      
-      currentImage = {
-          ...currentImage,
-          analysis: analysisResult,
-          isAnalyzed: true,
-          isLoading: false,
-      };
-      setActiveImage(currentImage);
-      onPortfolioUpdate(currentImage);
-
-    } catch (error) {
-      console.error("Error analyzing image:", error);
-      setActiveImage(prev => {
-        if (!prev || prev.id !== imageId) return prev; // Stale request, ignore
-        return { ...prev, isLoading: false, analysis: null }; // Reset on error
-      });
-    }
+    // Trigger analysis
+    performAnalysis(imageData, imageId);
   };
+
+  // Auto-trigger analysis if image is in loading state on mount (e.g. from Editor save & analyze)
+  useEffect(() => {
+      if (activeImage && activeImage.isLoading && !activeImage.isAnalyzed) {
+          performAnalysis(activeImage.data, activeImage.id);
+      }
+  }, [activeImage?.id, activeImage?.isLoading, performAnalysis]);
+
 
   const handleApplyEdit = async (suggestion: string) => {
     if (!activeImage) return;
@@ -345,7 +424,9 @@ const LightBoxView: React.FC<{
 
   const handleReAnalyze = () => {
     if (!activeImage) return;
-    handleImageUpload(activeImage.data);
+    // Set to loading and re-run
+    setActiveImage(prev => prev ? { ...prev, isLoading: true, isAnalyzed: false, analysis: null } : null);
+    performAnalysis(activeImage.data, activeImage.id);
   };
 
   const handleReset = () => {
@@ -392,14 +473,17 @@ const LightBoxView: React.FC<{
               editingSuggestion={editingState.suggestion}
               isApiKeySelected={isApiKeySelected}
               onSelectApiKey={onSelectApiKey}
+              onUploadNew={onUploadNew}
             />
         </>
       ) : (
         <div className="max-w-4xl mx-auto pt-12 animate-fade-in-up">
             <ImageUploader
-            onImageUpload={handleImageUpload}
-            imagePreview={activeImage?.data.preview || null}
-            isLoading={activeImage?.isLoading || false}
+                onImageUpload={handleImageUpload}
+                imagePreview={activeImage?.data.preview || null}
+                isLoading={activeImage?.isLoading || false}
+                showAnalyzeButton={!!activeImage && !activeImage.isAnalyzed && !activeImage.isLoading}
+                onAnalyzeClick={handleReAnalyze}
             />
             
             <div className="mt-8 text-center animate-fade-in delay-500">
@@ -491,8 +575,9 @@ const PRESETS: { name: string, adjustments: Partial<ImageAdjustments>, colorClas
 const EditView: React.FC<{ 
     initialImage: ImageData | null;
     analysis: AnalysisResult | null;
-    onSendToLightBox: (imageData: ImageData) => void;
-}> = ({ initialImage, analysis, onSendToLightBox }) => {
+    onSendToLightBox: (imageData: ImageData, shouldAnalyze: boolean) => void;
+    onUploadNew: () => void;
+}> = ({ initialImage, analysis, onSendToLightBox, onUploadNew }) => {
     const [image, setImage] = useState<ImageData | null>(initialImage);
     const [prompt, setPrompt] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -501,6 +586,20 @@ const EditView: React.FC<{
     const [showCompare, setShowCompare] = useState(false);
     const [compareSplit, setCompareSplit] = useState(50);
     const [activeCategory, setActiveCategory] = useState<'light' | 'color' | 'detail' | 'grade' | 'mixer'>('light');
+
+    // Annotation / Mask State
+    const [annotationMode, setAnnotationMode] = useState<'none' | 'brush' | 'eraser'>('none');
+    const [brushSize, setBrushSize] = useState(20);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [isDrawing, setIsDrawing] = useState(false);
+    const [hasMask, setHasMask] = useState(false);
+    const [applyToSelection, setApplyToSelection] = useState(false); // Toggle: Whole Image vs Selection
+
+    // Style Match AI State
+    const [stylePrompt, setStylePrompt] = useState('');
+    const [refImagePreview, setRefImagePreview] = useState<string | null>(null);
+    const [refImageBase64, setRefImageBase64] = useState<string | null>(null);
+    const [isStyleMatching, setIsStyleMatching] = useState(false);
 
     // Extended Manual Adjustments - Defaults set to "Middle"
     const defaultAdjustments: ImageAdjustments = { 
@@ -539,6 +638,145 @@ const EditView: React.FC<{
         }
     }, [initialImage]);
 
+    // Canvas Resize Observer
+    useEffect(() => {
+        const resizeCanvas = () => {
+            if (canvasRef.current && canvasRef.current.parentElement) {
+                const parent = canvasRef.current.parentElement;
+                // Match the visual size of the image, not just the parent container
+                const img = parent.querySelector('img');
+                if (img) {
+                    canvasRef.current.width = img.clientWidth;
+                    canvasRef.current.height = img.clientHeight;
+                    // Position absolute relative to container handled by CSS
+                }
+            }
+        };
+        
+        window.addEventListener('resize', resizeCanvas);
+        // Small delay to ensure image renders
+        const t = setTimeout(resizeCanvas, 100);
+        return () => {
+            window.removeEventListener('resize', resizeCanvas);
+            clearTimeout(t);
+        };
+    }, [image]);
+
+    // --- Drawing Handlers ---
+    const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
+        if (annotationMode === 'none') return;
+        setIsDrawing(true);
+        draw(e);
+    };
+
+    const stopDrawing = () => {
+        setIsDrawing(false);
+        if (canvasRef.current) {
+            // Check if canvas is empty to toggle hasMask
+            // optimization: assume true if drawing happened, provide clear button
+            setHasMask(true);
+        }
+    };
+
+    const draw = (e: React.MouseEvent | React.TouchEvent) => {
+        if (!isDrawing || annotationMode === 'none' || !canvasRef.current) return;
+        
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        const rect = canvas.getBoundingClientRect();
+        let x, y;
+
+        if ('touches' in e) {
+            x = e.touches[0].clientX - rect.left;
+            y = e.touches[0].clientY - rect.top;
+        } else {
+            x = (e as React.MouseEvent).clientX - rect.left;
+            y = (e as React.MouseEvent).clientY - rect.top;
+        }
+
+        ctx.lineWidth = brushSize;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        if (annotationMode === 'brush') {
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)'; // Semi-transparent white
+            ctx.beginPath();
+            ctx.moveTo(x, y); // Simply plotting points for now, needs `prevX` for smooth lines
+            ctx.lineTo(x, y);
+            ctx.stroke();
+        } else if (annotationMode === 'eraser') {
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.strokeStyle = 'rgba(0,0,0,1)';
+            ctx.beginPath();
+            ctx.lineTo(x, y);
+            ctx.stroke();
+        }
+    };
+    
+    // Improved drawing with previous coordinates
+    const lastPos = useRef<{x: number, y: number} | null>(null);
+    const drawSmooth = (e: React.MouseEvent | React.TouchEvent) => {
+        if (!isDrawing || annotationMode === 'none' || !canvasRef.current) return;
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        const rect = canvas.getBoundingClientRect();
+        let x, y;
+        if ('touches' in e) {
+            x = e.touches[0].clientX - rect.left;
+            y = e.touches[0].clientY - rect.top;
+        } else {
+            x = (e as React.MouseEvent).clientX - rect.left;
+            y = (e as React.MouseEvent).clientY - rect.top;
+        }
+
+        if (lastPos.current) {
+            ctx.lineWidth = brushSize;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            if (annotationMode === 'brush') {
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)'; 
+            } else {
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.strokeStyle = 'rgba(0,0,0,1)';
+            }
+
+            ctx.beginPath();
+            ctx.moveTo(lastPos.current.x, lastPos.current.y);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+        }
+        lastPos.current = { x, y };
+    };
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+        if (annotationMode === 'none') return;
+        setIsDrawing(true);
+        const rect = canvasRef.current!.getBoundingClientRect();
+        lastPos.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    };
+    
+    const handleTouchStart = (e: React.TouchEvent) => {
+        if (annotationMode === 'none') return;
+        setIsDrawing(true);
+        const rect = canvasRef.current!.getBoundingClientRect();
+        lastPos.current = { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
+    };
+
+    const clearMask = () => {
+        if (canvasRef.current) {
+            const ctx = canvasRef.current.getContext('2d');
+            ctx?.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+            setHasMask(false);
+        }
+    };
+
     // --- History Management ---
     const addToHistory = (newImage: ImageData, actionName: string, newAdjustments: ImageAdjustments) => {
         setHistory(prev => [
@@ -565,14 +803,35 @@ const EditView: React.FC<{
         setIsLoading(true);
         setActiveQuickEdit(quickEditName);
         try {
-            const newBase64 = await GeminiService.editImage(editPrompt, image.base64, image.mimeType);
+            let maskBase64: string | undefined = undefined;
+            if (applyToSelection && hasMask && canvasRef.current) {
+                // Get the mask from the canvas
+                // Create a temporary canvas to ensure black background and white mask
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = canvasRef.current.width;
+                tempCanvas.height = canvasRef.current.height;
+                const tempCtx = tempCanvas.getContext('2d');
+                if (tempCtx) {
+                    tempCtx.fillStyle = 'black';
+                    tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+                    tempCtx.drawImage(canvasRef.current, 0, 0); // Overlay the white strokes
+                    const dataUrl = tempCanvas.toDataURL('image/png');
+                    maskBase64 = dataUrl.split(',')[1];
+                }
+            }
+
+            const newBase64 = await GeminiService.editImage(editPrompt, image.base64, image.mimeType, maskBase64);
             const newImageData = {
                 base64: newBase64,
                 mimeType: 'image/png',
                 preview: `data:image/png;base64,${newBase64}`,
             };
             setImage(newImageData);
-            addToHistory(newImageData, quickEditName || 'Generative Fill', adjustments);
+            addToHistory(newImageData, quickEditName || (applyToSelection ? 'Generative Fill (Selection)' : 'Generative Fill'), adjustments);
+            
+            // Clear mask after successful edit if it was a selection edit
+            if (applyToSelection) clearMask();
+
         } catch (error) {
             console.error("Error editing image:", error);
         } finally {
@@ -593,7 +852,7 @@ const EditView: React.FC<{
                 preview: `data:${image.mimeType};base64,${newBase64}`,
             };
             setImage(newImageData);
-            addToHistory(newImageData, 'Upscale (26MP)', adjustments);
+            addToHistory(newImageData, 'Upscale (24MP)', adjustments);
         } catch (error) {
             console.error("Error upscaling image:", error);
         } finally {
@@ -605,6 +864,33 @@ const EditView: React.FC<{
     const handleDownload = () => {
         if (image) {
              downloadImage(image.base64, `photon_edit_${Date.now()}.png`);
+        }
+    };
+
+    // --- Style Match AI ---
+    const handleRefUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            try {
+                const imageData = await fileToImageData(file);
+                setRefImagePreview(imageData.preview);
+                setRefImageBase64(imageData.base64);
+            } catch (error) {
+                console.error("Error reading ref file", error);
+            }
+        }
+    };
+
+    const handleStyleMatch = async () => {
+        if (!stylePrompt && !refImageBase64) return;
+        setIsStyleMatching(true);
+        try {
+            const newAdjustments = await GeminiService.generateAdjustments(stylePrompt, refImageBase64 || undefined);
+            setAdjustments(prev => ({ ...prev, ...newAdjustments }));
+        } catch (error) {
+            console.error("Style match failed", error);
+        } finally {
+            setIsStyleMatching(false);
         }
     };
 
@@ -714,6 +1000,40 @@ const EditView: React.FC<{
                     <h2 className="text-xs font-display font-bold uppercase tracking-widest text-gray-400 flex items-center gap-2">
                         <WrenchScrewdriverIcon className="w-4 h-4" /> Darkroom Tools
                     </h2>
+                </div>
+
+                {/* Style Match AI - Placed prominently at the top */}
+                <div className="p-4 border-b border-white/5 bg-indigo-900/10">
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-indigo-400 flex items-center gap-2 mb-3">
+                        <ChatBubbleLeftRightIcon className="w-3 h-3" /> Style Match AI
+                    </h3>
+                    <div className="space-y-3">
+                        <textarea 
+                            value={stylePrompt}
+                            onChange={(e) => setStylePrompt(e.target.value)}
+                            placeholder="Describe style (e.g. 'Warm 1980s film look')"
+                            className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-xs text-white placeholder-gray-500 focus:ring-1 focus:ring-indigo-500 outline-none resize-none h-16"
+                        />
+                        <div className="flex items-center gap-2">
+                            <label className="flex-1 cursor-pointer bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg py-1.5 px-2 flex items-center justify-center gap-2 transition-all">
+                                <PaperClipIcon className="w-3 h-3 text-gray-400" />
+                                <span className="text-[10px] font-bold text-gray-300 truncate">
+                                    {refImagePreview ? 'Ref Selected' : 'Upload Ref'}
+                                </span>
+                                <input type="file" accept="image/*" className="hidden" onChange={handleRefUpload} />
+                            </label>
+                            {refImagePreview && (
+                                <img src={refImagePreview} alt="ref" className="w-8 h-8 rounded object-cover border border-white/10" />
+                            )}
+                        </div>
+                        <button 
+                            onClick={handleStyleMatch}
+                            disabled={isStyleMatching || (!stylePrompt && !refImageBase64)}
+                            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 rounded-lg text-xs shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isStyleMatching ? <Spinner /> : 'Match Sliders'}
+                        </button>
+                    </div>
                 </div>
                 
                 {/* Category Tabs */}
@@ -845,6 +1165,13 @@ const EditView: React.FC<{
                     </span>
                 </div>
 
+                {/* Loading Overlay */}
+                {isLoading && (
+                    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                        <ProgressBar label={activeQuickEdit ? `Applying ${activeQuickEdit}...` : 'Processing Edit...'} />
+                    </div>
+                )}
+
                 {/* Image Container with Filters & Overlays */}
                 <div className="relative max-w-full max-h-full shadow-[0_0_50px_-10px_rgba(0,0,0,0.7)] transition-transform duration-200 select-none">
                     
@@ -856,9 +1183,22 @@ const EditView: React.FC<{
                              const showOverlays = !isOriginal;
 
                              return (
-                                <div className="relative w-full h-full">
+                                <div className="relative w-full h-full flex items-center justify-center">
                                     {showOverlays && (
                                         <>
+                                            {/* Mask Canvas Overlay */}
+                                            <canvas
+                                                ref={canvasRef}
+                                                className={`absolute z-20 touch-none ${annotationMode !== 'none' ? 'cursor-crosshair' : 'pointer-events-none'}`}
+                                                onMouseDown={handleMouseDown}
+                                                onMouseMove={drawSmooth}
+                                                onMouseUp={stopDrawing}
+                                                onMouseLeave={stopDrawing}
+                                                onTouchStart={handleTouchStart}
+                                                onTouchMove={drawSmooth}
+                                                onTouchEnd={stopDrawing}
+                                            />
+
                                             {/* Vignette */}
                                             <div 
                                                 className="absolute inset-0 z-10 pointer-events-none rounded-sm"
@@ -965,19 +1305,198 @@ const EditView: React.FC<{
                         }
                     })()}
                 </div>
+                
+                {/* Annotation Tools Floating Toolbar */}
+                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-black/70 backdrop-blur-md p-2 rounded-2xl flex items-center gap-4 border border-white/10 shadow-2xl z-40">
+                    <button 
+                        onClick={() => setAnnotationMode('none')}
+                        className={`p-2.5 rounded-xl transition-all ${annotationMode === 'none' ? 'bg-white text-black' : 'text-gray-400 hover:text-white hover:bg-white/10'}`}
+                        title="View Mode"
+                    >
+                        <ArrowsPointingOutIcon className="w-5 h-5" />
+                    </button>
+                    <div className="w-px h-6 bg-white/10"></div>
+                    <button 
+                        onClick={() => setAnnotationMode('brush')}
+                        className={`p-2.5 rounded-xl transition-all ${annotationMode === 'brush' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30' : 'text-gray-400 hover:text-white hover:bg-white/10'}`}
+                        title="Mask Brush"
+                    >
+                        <BrushIcon className="w-5 h-5" />
+                    </button>
+                    <button 
+                        onClick={() => setAnnotationMode('eraser')}
+                        className={`p-2.5 rounded-xl transition-all ${annotationMode === 'eraser' ? 'bg-pink-600 text-white shadow-lg shadow-pink-500/30' : 'text-gray-400 hover:text-white hover:bg-white/10'}`}
+                        title="Mask Eraser"
+                    >
+                        <EraserIcon className="w-5 h-5" />
+                    </button>
+                    {hasMask && (
+                        <button 
+                            onClick={clearMask}
+                            className="p-2.5 rounded-xl text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                            title="Clear Mask"
+                        >
+                            <XCircleIcon className="w-5 h-5" />
+                        </button>
+                    )}
+                    {/* Brush Size Slider */}
+                    {(annotationMode === 'brush' || annotationMode === 'eraser') && (
+                        <div className="flex items-center gap-2 pl-2 border-l border-white/10">
+                            <span className="text-[10px] font-bold text-gray-400 w-4">{brushSize}</span>
+                            <input 
+                                type="range" 
+                                min="5" 
+                                max="100" 
+                                value={brushSize} 
+                                onChange={(e) => setBrushSize(Number(e.target.value))} 
+                                className="w-20 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-white"
+                            />
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* --- Right Panel: The AI Lab --- */}
             <div className="w-full md:w-80 bg-surfaceHighlight/50 border-l border-white/5 flex flex-col z-20 shadow-2xl flex-shrink-0 backdrop-blur-md">
-                 <div className="p-4 border-b border-white/5">
-                    <h2 className="text-xs font-display font-bold uppercase tracking-widest text-indigo-400 flex items-center gap-2">
+                 
+                {/* Updated Header with Top Action Buttons */}
+                <div className="p-4 border-b border-white/5 space-y-4">
+                    <div className="grid grid-cols-2 gap-2">
+                        {/* Primary Action: Save & Analyze */}
+                        <button 
+                            onClick={() => onSendToLightBox(image, true)}
+                            className="col-span-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold py-2.5 px-4 rounded-lg shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2 text-xs transition-all border border-white/10"
+                        >
+                            <SparklesIcon className="w-4 h-4" /> Save & Analyze
+                        </button>
+                        
+                        {/* Secondary Action: Save Only */}
+                        <button 
+                            onClick={() => onSendToLightBox(image, false)}
+                            className="bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold py-2 px-3 rounded-lg flex items-center justify-center gap-2 text-xs transition-all border border-white/10"
+                        >
+                            <RectangleStackIcon className="w-3 h-3" /> Save to Light Box
+                        </button>
+
+                        {/* Tertiary Action: Download */}
+                        <button 
+                            onClick={handleDownload}
+                            className="bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold py-2 px-3 rounded-lg flex items-center justify-center gap-2 text-xs transition-all border border-white/10"
+                            title="Download to Device"
+                        >
+                            <ArrowDownTrayIcon className="w-3 h-3" /> Download
+                        </button>
+
+                        {/* Quaternary Action: Upload New */}
+                        <button 
+                            onClick={onUploadNew}
+                            className="bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold py-2 px-3 rounded-lg flex items-center justify-center gap-2 text-xs transition-all border border-white/10"
+                            title="Upload New Photo"
+                        >
+                            <ArrowUpTrayIcon className="w-3 h-3" /> New
+                        </button>
+                    </div>
+
+                    <h2 className="text-xs font-display font-bold uppercase tracking-widest text-indigo-400 flex items-center gap-2 pt-2 border-t border-white/5">
                         <SparklesIcon className="w-4 h-4" /> AI Generation Lab
                     </h2>
                 </div>
 
                 <div className="p-5 space-y-8 overflow-y-auto flex-grow custom-scrollbar">
+                    {/* Analyze CTA if analysis is missing */}
+                    {!analysis && (
+                        <div className="bg-gradient-to-br from-indigo-900/40 to-purple-900/40 p-4 rounded-xl border border-indigo-500/30 text-center animate-fade-in">
+                            <SparklesIcon className="w-8 h-8 text-indigo-400 mx-auto mb-2" />
+                            <h3 className="text-sm font-bold text-white mb-1">Unlock Creative Intelligence</h3>
+                            <p className="text-[10px] text-gray-300 mb-3">Analyze this image to get AI-powered creative remixes and smart fixes.</p>
+                            <button 
+                                onClick={() => onSendToLightBox(image, true)}
+                                className="w-full bg-white text-black font-bold py-2 rounded-lg text-xs hover:bg-gray-200 transition-colors shadow-lg"
+                            >
+                                Analyze Image
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Creative Suggestions (Only show if analysis exists) */}
+                    {analysis && analysis.creative_remixes && (
+                        <div className="space-y-3 animate-fade-in">
+                            <h3 className="text-xs font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400 uppercase tracking-widest flex items-center gap-2">
+                                <SparklesIcon className="w-3 h-3 text-indigo-400"/> Creative AI Suggestions
+                            </h3>
+                            <div className="grid grid-cols-1 gap-2">
+                                {analysis.creative_remixes.map((remix, idx) => (
+                                    <button
+                                        key={idx}
+                                        onClick={() => executeEdit(remix.prompt, remix.title)}
+                                        disabled={isLoading}
+                                        className="group relative w-full text-left p-3 bg-gray-800/40 hover:bg-gradient-to-r hover:from-indigo-900/40 hover:to-purple-900/40 border border-white/5 hover:border-indigo-500/30 rounded-lg transition-all"
+                                    >
+                                        <div className="flex justify-between items-center mb-1">
+                                            <span className="text-[10px] font-bold text-gray-200 group-hover:text-white uppercase tracking-wide">
+                                                {remix.title}
+                                            </span>
+                                            <span className="text-[9px] bg-white/5 text-gray-400 px-1.5 py-0.5 rounded border border-white/5">
+                                                {remix.category}
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-gray-500 group-hover:text-indigo-200 line-clamp-1 transition-colors">{remix.description}</p>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Generative Prompt with Selection Toggle */}
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Generative Fill</h3>
+                            {/* Toggle Switch */}
+                            <div className="flex bg-black/40 rounded-lg p-0.5 border border-white/10">
+                                <button 
+                                    onClick={() => setApplyToSelection(false)}
+                                    className={`px-2 py-1 text-[9px] font-bold rounded-md transition-all ${!applyToSelection ? 'bg-white text-black' : 'text-gray-500 hover:text-gray-300'}`}
+                                >
+                                    Whole Image
+                                </button>
+                                <button 
+                                    onClick={() => setApplyToSelection(true)}
+                                    className={`px-2 py-1 text-[9px] font-bold rounded-md transition-all flex items-center gap-1 ${applyToSelection ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:text-gray-300'}`}
+                                >
+                                    Selection {hasMask && <span className="w-1.5 h-1.5 rounded-full bg-green-400 block"></span>}
+                                </button>
+                            </div>
+                        </div>
+                        
+                        {applyToSelection && !hasMask && (
+                            <div className="bg-yellow-900/20 border border-yellow-500/20 p-2 rounded text-[10px] text-yellow-200 flex items-center gap-2">
+                                <BrushIcon className="w-3 h-3" />
+                                Use the brush tool below the image to select an area.
+                            </div>
+                        )}
+
+                        <div className="relative">
+                            <textarea 
+                                value={prompt}
+                                onChange={(e) => setPrompt(e.target.value)}
+                                placeholder={applyToSelection ? "Describe change for selection..." : "Describe a change (e.g., 'Add a neon sign')..."}
+                                className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-white placeholder-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none h-24 resize-none transition-all"
+                            />
+                            <div className="absolute bottom-2 right-2">
+                                <SparklesIcon className="w-4 h-4 text-indigo-500/50" />
+                            </div>
+                        </div>
+                        <button 
+                            onClick={() => executeEdit(prompt, null)}
+                            disabled={isLoading || !prompt || (applyToSelection && !hasMask)}
+                            className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold py-2.5 px-4 rounded-lg shadow-lg shadow-indigo-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-white/10"
+                        >
+                            {isLoading && !activeQuickEdit ? <Spinner /> : 'Generate Edit'}
+                        </button>
+                    </div>
+
                     {/* Quick Actions */}
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-2 pt-4 border-t border-white/5">
                         <button 
                             onClick={() => executeEdit('Remove background', 'Remove BG')}
                             disabled={isLoading}
@@ -1009,58 +1528,6 @@ const EditView: React.FC<{
                         >
                              {isLoading && activeQuickEdit === 'Cinematic' ? <Spinner /> : <PlayIcon className="w-5 h-5 text-orange-400 group-hover:scale-110 transition-transform"/>}
                              <span className="text-[10px] font-bold text-gray-300 uppercase">Cinematic</span>
-                        </button>
-                    </div>
-
-                    {/* Creative Suggestions */}
-                    {analysis && analysis.creative_remixes && (
-                        <div className="space-y-3">
-                            <h3 className="text-xs font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400 uppercase tracking-widest flex items-center gap-2">
-                                <SparklesIcon className="w-3 h-3 text-indigo-400"/> Creative AI Suggestions
-                            </h3>
-                            <div className="grid grid-cols-1 gap-2">
-                                {analysis.creative_remixes.map((remix, idx) => (
-                                    <button
-                                        key={idx}
-                                        onClick={() => executeEdit(remix.prompt, remix.title)}
-                                        disabled={isLoading}
-                                        className="group relative w-full text-left p-3 bg-gray-800/40 hover:bg-gradient-to-r hover:from-indigo-900/40 hover:to-purple-900/40 border border-white/5 hover:border-indigo-500/30 rounded-lg transition-all"
-                                    >
-                                        <div className="flex justify-between items-center mb-1">
-                                            <span className="text-[10px] font-bold text-gray-200 group-hover:text-white uppercase tracking-wide">
-                                                {remix.title}
-                                            </span>
-                                            <span className="text-[9px] bg-white/5 text-gray-400 px-1.5 py-0.5 rounded border border-white/5">
-                                                {remix.category}
-                                            </span>
-                                        </div>
-                                        <p className="text-xs text-gray-500 group-hover:text-indigo-200 line-clamp-1 transition-colors">{remix.description}</p>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Generative Prompt */}
-                    <div className="space-y-3">
-                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Generative Fill</h3>
-                        <div className="relative">
-                            <textarea 
-                                value={prompt}
-                                onChange={(e) => setPrompt(e.target.value)}
-                                placeholder="Describe a change (e.g., 'Add a neon sign')..."
-                                className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-white placeholder-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none h-24 resize-none transition-all"
-                            />
-                            <div className="absolute bottom-2 right-2">
-                                <SparklesIcon className="w-4 h-4 text-indigo-500/50" />
-                            </div>
-                        </div>
-                        <button 
-                            onClick={() => executeEdit(prompt, null)}
-                            disabled={isLoading || !prompt}
-                            className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold py-2.5 px-4 rounded-lg shadow-lg shadow-indigo-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-white/10"
-                        >
-                            {isLoading && !activeQuickEdit ? <Spinner /> : 'Generate Edit'}
                         </button>
                     </div>
 
@@ -1107,837 +1574,427 @@ const EditView: React.FC<{
                             ))}
                         </div>
                      </div>
-
-                     <div className="pt-4 space-y-2">
-                        <button onClick={handleDownload} className="w-full bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 text-sm transition-all border border-white/10">
-                            <ArrowDownTrayIcon className="w-4 h-4" /> Download to Device
-                        </button>
-                        <button onClick={() => onSendToLightBox(image)} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-display font-bold py-3 px-4 rounded-lg shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 text-sm transition-all border border-white/10">
-                            Save to Light Box <ArrowRightIcon className="w-4 h-4" />
-                        </button>
-                     </div>
                 </div>
             </div>
         </div>
     );
 };
 
-const StudioView: React.FC<{ 
-  onSendToLightBox: (imageData: ImageData) => void;
-  portfolioImages: ActiveImage[];
-}> = ({ onSendToLightBox, portfolioImages }) => {
-  const [prompt, setPrompt] = useState('');
-  const [aspectRatio, setAspectRatio] = useState('1:1');
-  const [generatedImage, setGeneratedImage] = useState<ImageData | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'generate' | 'calendar' | 'madlibs'>('madlibs');
-  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
-
-  // Mad Libs State
-  const [madLibsInputs, setMadLibsInputs] = useState({ subject: '', location: '', mood: '', lighting: '' });
-  const [shotConcepts, setShotConcepts] = useState<ShotConcept[]>([]);
-  const [isConceptLoading, setIsConceptLoading] = useState(false);
-  const [conceptImages, setConceptImages] = useState<Record<number, ImageData | null>>({});
-  const [conceptImageLoading, setConceptImageLoading] = useState<Record<number, boolean>>({});
-
-  // Populate calendar with active image analysis posts
-  useEffect(() => {
-    const events: CalendarEvent[] = [];
-    portfolioImages.forEach(img => {
-        if (img.analysis?.social_media_strategy?.sample_posts) {
-            img.analysis.social_media_strategy.sample_posts.forEach((post, i) => {
-                // Spread posts out starting from tomorrow
-                const date = new Date();
-                date.setDate(date.getDate() + (i + 1) + (Math.random() * 3)); 
-                
-                events.push({
-                    id: `${img.id}-${i}`,
-                    date: date,
-                    platform: post.platform as PlatformName,
-                    content: post.post_text,
-                    thumbnail: img.data.preview,
-                    status: 'scheduled'
-                });
-            });
-        }
-    });
-    setCalendarEvents(events.sort((a, b) => a.date.getTime() - b.date.getTime()));
-  }, [portfolioImages]);
-
-  const handleGenerate = async () => {
-    if (!prompt) return;
-    setIsLoading(true);
-    setGeneratedImage(null);
-    try {
-      const newBase64 = await GeminiService.generateImage(prompt, aspectRatio);
-      const newImageData = {
-        base64: newBase64,
-        mimeType: 'image/png',
-        preview: `data:image/png;base64,${newBase64}`,
-      };
-      setGeneratedImage(newImageData);
-    } catch (error) {
-      console.error("Error generating image:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleGenerateConcepts = async () => {
-      const { subject, location, mood, lighting } = madLibsInputs;
-      if (!subject || !location || !mood || !lighting) return;
-      
-      setIsConceptLoading(true);
-      setConceptImages({}); // Clear previous images
-      try {
-          const concepts = await GeminiService.generateShotConcepts(madLibsInputs);
-          setShotConcepts(concepts);
-      } catch (error) {
-          console.error("Error generating concepts", error);
-      } finally {
-          setIsConceptLoading(false);
-      }
-  };
-
-  const handleGenerateConceptImage = async (concept: ShotConcept, index: number) => {
-      setConceptImageLoading(prev => ({ ...prev, [index]: true }));
-      try {
-          // Use the visual description as the prompt
-          const newBase64 = await GeminiService.generateImage(concept.visual_description, '16:9');
-          const newImageData = {
-              base64: newBase64,
-              mimeType: 'image/png',
-              preview: `data:image/png;base64,${newBase64}`,
-          };
-          setConceptImages(prev => ({ ...prev, [index]: newImageData }));
-      } catch (error) {
-          console.error("Error generating concept image", error);
-      } finally {
-          setConceptImageLoading(prev => ({ ...prev, [index]: false }));
-      }
-  };
-
-  const randomizeMadLibs = () => {
-      const subjects = ["Cyberpunk Samurai", "Floating Coffee Cup", "Neon Retro Car", "Minimalist Flower"];
-      const locations = ["Rainy Tokyo Street", "White Void Studio", "Mars Colony", "Underwater Cave"];
-      const moods = ["Melancholic", "Energetic", "Dreamy", "Sinister"];
-      const lightings = ["Neon Pink & Blue", "Soft Window Light", "Hard Flash", "Golden Hour"];
-
-      setMadLibsInputs({
-          subject: subjects[Math.floor(Math.random() * subjects.length)],
-          location: locations[Math.floor(Math.random() * locations.length)],
-          mood: moods[Math.floor(Math.random() * moods.length)],
-          lighting: lightings[Math.floor(Math.random() * lightings.length)],
-      });
-  };
-
-
-  const renderCalendar = () => {
-      return (
-          <div className="space-y-6 animate-fade-in">
-              <div className="flex justify-between items-center">
-                  <h2 className="text-2xl font-bold text-white">Content Calendar</h2>
-                  <span className="text-gray-400 text-sm">Showing upcoming scheduled posts</span>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
-                   {/* Simple Calendar Grid (Next 7 days) */}
-                   {Array.from({length: 7}).map((_, i) => {
-                       const date = new Date();
-                       date.setDate(date.getDate() + i);
-                       const dayEvents = calendarEvents.filter(e => e.date.toDateString() === date.toDateString());
-
-                       return (
-                           <div key={i} className="bg-gray-800 rounded-lg border border-gray-700 min-h-[150px] p-2">
-                               <div className="text-center border-b border-gray-700 pb-2 mb-2">
-                                   <p className="text-indigo-400 font-bold">{date.toLocaleDateString('en-US', { weekday: 'short' })}</p>
-                                   <p className="text-white text-lg">{date.getDate()}</p>
-                               </div>
-                               <div className="space-y-2">
-                                   {dayEvents.length > 0 ? dayEvents.map(evt => (
-                                       <div key={evt.id} className="bg-gray-700/50 rounded p-1.5 flex gap-2 items-center group relative cursor-pointer hover:bg-gray-600 transition-colors">
-                                           <img src={evt.thumbnail} className="w-6 h-6 rounded object-cover" />
-                                           <div className="min-w-0">
-                                               <p className="text-[10px] font-bold text-gray-300 truncate">{evt.platform}</p>
-                                           </div>
-                                            {/* Tooltip */}
-                                            <div className="absolute bottom-full left-0 w-48 bg-black text-white text-xs p-2 rounded z-50 hidden group-hover:block shadow-xl border border-gray-600 mb-1">
-                                                {evt.content}
-                                            </div>
-                                       </div>
-                                   )) : (
-                                       <p className="text-xs text-gray-600 text-center py-4">No posts</p>
-                                   )}
-                               </div>
-                           </div>
-                       )
-                   })}
-              </div>
-              <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
-                  <h3 className="font-bold text-white mb-4">Upcoming Feed Preview</h3>
-                  <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
-                      {calendarEvents.slice(0, 16).map(evt => (
-                          <div key={evt.id} className="relative aspect-square">
-                              <img src={evt.thumbnail} className="w-full h-full object-cover rounded" />
-                              <div className="absolute bottom-0 right-0 bg-black/70 p-1 rounded-tl">
-                                   {/* Very simple icon logic based on platform string */}
-                                  <span className="text-[8px] text-white font-bold">{evt.platform[0]}</span>
-                              </div>
-                          </div>
-                      ))}
-                  </div>
-              </div>
-          </div>
-      );
-  };
-
-  const renderMadLibs = () => {
-      return (
-          <div className="space-y-8 animate-fade-in max-w-5xl mx-auto">
-               <div className="bg-gradient-to-br from-gray-800 to-gray-900 p-10 rounded-2xl border border-gray-700 shadow-2xl relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/5 rounded-full blur-[100px] pointer-events-none group-hover:bg-amber-500/10 transition-colors duration-1000"></div>
-                    
-                    <div className="flex justify-between items-start mb-10 relative z-10">
-                         <div>
-                            <h2 className="text-3xl font-display font-bold text-white flex items-center gap-3">
-                                <div className="bg-amber-500/20 p-2 rounded-lg border border-amber-500/30">
-                                     <BeakerIcon className="w-6 h-6 text-amber-400" />
-                                </div>
-                                Shot Architect
-                            </h2>
-                            <p className="text-gray-400 mt-2 text-lg font-light">Design your next photoshoot with AI-powered creative direction.</p>
-                         </div>
-                         <button 
-                            onClick={randomizeMadLibs}
-                            className="text-xs text-amber-400 hover:text-white bg-amber-500/10 hover:bg-amber-500 border border-amber-500/30 px-4 py-2 rounded-full font-bold transition-all"
-                         >
-                             Autofill (Random)
-                         </button>
-                    </div>
-
-                    <div className="text-xl md:text-3xl leading-loose font-serif text-gray-300 space-y-6 relative z-10">
-                        <div className="flex flex-wrap items-baseline gap-4">
-                            <span className="text-white">I want to photograph a</span>
-                            <input 
-                                type="text" 
-                                placeholder="subject (e.g. vintage car)" 
-                                value={madLibsInputs.subject}
-                                onChange={(e) => setMadLibsInputs({...madLibsInputs, subject: e.target.value})}
-                                className="bg-black/30 border-b-2 border-amber-500/50 focus:border-amber-400 outline-none px-4 py-1 text-amber-100 placeholder-gray-600 min-w-[250px] text-center font-bold italic transition-all focus:bg-black/50"
-                            />
-                            <span className="text-white">in a</span>
-                            <input 
-                                type="text" 
-                                placeholder="location (e.g. neon city)" 
-                                value={madLibsInputs.location}
-                                onChange={(e) => setMadLibsInputs({...madLibsInputs, location: e.target.value})}
-                                className="bg-black/30 border-b-2 border-amber-500/50 focus:border-amber-400 outline-none px-4 py-1 text-amber-100 placeholder-gray-600 min-w-[250px] text-center font-bold italic transition-all focus:bg-black/50"
-                            />
-                        </div>
-                        <div className="flex flex-wrap items-baseline gap-4">
-                             <span className="text-white">with</span>
-                             <input 
-                                type="text" 
-                                placeholder="mood (e.g. nostalgic)" 
-                                value={madLibsInputs.mood}
-                                onChange={(e) => setMadLibsInputs({...madLibsInputs, mood: e.target.value})}
-                                className="bg-black/30 border-b-2 border-amber-500/50 focus:border-amber-400 outline-none px-4 py-1 text-amber-100 placeholder-gray-600 min-w-[200px] text-center font-bold italic transition-all focus:bg-black/50"
-                            />
-                            <span className="text-white">vibes and</span>
-                            <input 
-                                type="text" 
-                                placeholder="lighting (e.g. hard flash)" 
-                                value={madLibsInputs.lighting}
-                                onChange={(e) => setMadLibsInputs({...madLibsInputs, lighting: e.target.value})}
-                                className="bg-black/30 border-b-2 border-amber-500/50 focus:border-amber-400 outline-none px-4 py-1 text-amber-100 placeholder-gray-600 min-w-[200px] text-center font-bold italic transition-all focus:bg-black/50"
-                            />
-                            <span className="text-white">lighting.</span>
-                        </div>
-                    </div>
-
-                    <div className="mt-12">
-                        <button 
-                            onClick={handleGenerateConcepts}
-                            disabled={isConceptLoading || !madLibsInputs.subject}
-                            className="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-display font-bold py-5 rounded-xl shadow-lg shadow-amber-900/40 text-xl transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.01]"
-                        >
-                            {isConceptLoading ? <Spinner /> : <>Generate Concepts <SparklesIcon className="w-6 h-6"/></>}
-                        </button>
-                    </div>
-               </div>
-
-               {shotConcepts.length > 0 && (
-                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in-up">
-                       {shotConcepts.map((concept, idx) => (
-                           <div key={idx} className="bg-gray-800 rounded-2xl border border-gray-700 p-8 hover:border-amber-500/50 transition-all hover:-translate-y-2 group shadow-xl flex flex-col">
-                               <div className="flex justify-between items-start mb-6">
-                                   <div className="bg-black/40 text-amber-400 text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wide border border-white/5">
-                                       Concept {idx + 1}
-                                   </div>
-                                   <span className={`text-xs px-3 py-1.5 rounded-full font-bold border border-white/5 ${
-                                       concept.difficulty === 'Easy' ? 'bg-green-900/30 text-green-400' :
-                                       concept.difficulty === 'Medium' ? 'bg-yellow-900/30 text-yellow-400' :
-                                       'bg-red-900/30 text-red-400'
-                                   }`}>
-                                       {concept.difficulty}
-                                   </span>
-                               </div>
-                               <h3 className="text-2xl font-display font-bold text-white mb-3 group-hover:text-amber-400 transition-colors">{concept.title}</h3>
-                               <p className="text-gray-400 text-sm mb-6 leading-relaxed border-b border-gray-700 pb-6 flex-grow">{concept.visual_description}</p>
-                               
-                               <div className="space-y-4 mb-6">
-                                   <div>
-                                       <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 flex items-center gap-2"><ApertureIcon className="w-3 h-3" /> Tech Specs</h4>
-                                       <p className="text-gray-300 text-xs bg-black/20 p-2 rounded border border-white/5 font-mono">{concept.technical_specs}</p>
-                                   </div>
-                                   <div>
-                                       <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 flex items-center gap-2"><PaintBrushIcon className="w-3 h-3" /> Art Direction</h4>
-                                       <p className="text-gray-300 text-xs bg-black/20 p-2 rounded border border-white/5">{concept.art_direction}</p>
-                                   </div>
-                               </div>
-
-                               {/* Example Image Section */}
-                               <div className="pt-4 border-t border-gray-700 mt-auto">
-                                    {conceptImages[idx] ? (
-                                        <div className="relative group/image">
-                                            <img src={conceptImages[idx]?.preview} alt={`Concept ${idx + 1}`} className="w-full h-32 object-cover rounded-lg border border-white/10 shadow-lg mb-3" />
-                                            <button 
-                                                onClick={() => onSendToLightBox(conceptImages[idx]!)}
-                                                className="absolute bottom-2 right-2 bg-black/60 hover:bg-green-600 text-white p-2 rounded-lg opacity-0 group-hover/image:opacity-100 transition-all backdrop-blur-sm"
-                                                title="Send to Light Box"
-                                            >
-                                                <ArrowRightIcon className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <button 
-                                            onClick={() => handleGenerateConceptImage(concept, idx)}
-                                            disabled={conceptImageLoading[idx]}
-                                            className="w-full bg-white/5 hover:bg-white/10 text-gray-300 font-bold py-2.5 rounded-lg border border-white/10 transition-colors flex items-center justify-center gap-2 text-sm"
-                                        >
-                                            {conceptImageLoading[idx] ? <Spinner /> : <>Generate Example <PhotoIcon className="w-4 h-4" /></>}
-                                        </button>
-                                    )}
-                               </div>
-                           </div>
-                       ))}
-                   </div>
-               )}
-          </div>
-      );
-  };
-
-  return (
-      <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-[calc(100vh-100px)] pt-24">
-          <div className="flex space-x-6 border-b border-gray-700 mb-8 overflow-x-auto">
-              <button 
-                onClick={() => setActiveTab('madlibs')}
-                className={`pb-4 font-bold text-lg transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${activeTab === 'madlibs' ? 'text-white border-amber-500' : 'text-gray-500 border-transparent hover:text-gray-300'}`}
-              >
-                  <BeakerIcon className="w-5 h-5" />
-                  Shot Architect <span className="text-[10px] bg-amber-500 text-black px-1.5 py-0.5 rounded ml-1 font-bold uppercase tracking-wide">New</span>
-              </button>
-              <button 
-                onClick={() => setActiveTab('generate')}
-                className={`pb-4 font-bold text-lg transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${activeTab === 'generate' ? 'text-white border-indigo-500' : 'text-gray-500 border-transparent hover:text-gray-300'}`}
-              >
-                  <SparklesIcon className="w-5 h-5" />
-                  Generative Studio
-              </button>
-              <button 
-                onClick={() => setActiveTab('calendar')}
-                className={`pb-4 font-bold text-lg transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${activeTab === 'calendar' ? 'text-white border-purple-500' : 'text-gray-500 border-transparent hover:text-gray-300'}`}
-              >
-                  <CalendarEventIcon className="w-5 h-5" />
-                  Content Calendar
-              </button>
-          </div>
-
-          {activeTab === 'calendar' && renderCalendar()}
-          {activeTab === 'madlibs' && renderMadLibs()}
-          {activeTab === 'generate' && (
-              <div className="space-y-6 max-w-4xl mx-auto animate-fade-in">
-                  <div className="bg-gray-800 p-6 rounded-2xl border border-gray-700 space-y-4 shadow-xl">
-                      <h2 className="text-xl font-bold text-indigo-400">Image Generation Studio</h2>
-                      <p className="text-gray-400 text-sm">Create high-fidelity assets from text descriptions.</p>
-                      <textarea
-                          value={prompt}
-                          onChange={(e) => setPrompt(e.target.value)}
-                          placeholder="Describe the image you want to create... e.g., 'A cinematic photo of a wolf in a neon-lit forest'"
-                          rows={3}
-                          className="w-full bg-black/40 text-white placeholder-gray-500 p-4 rounded-xl border border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-                      />
-                      <div className="flex flex-col sm:flex-row gap-4">
-                          <div className="flex-grow">
-                              <label htmlFor="aspect-ratio" className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wide">Aspect Ratio</label>
-                              <select id="aspect-ratio" value={aspectRatio} onChange={(e) => setAspectRatio(e.target.value)} className="w-full bg-gray-900 text-white p-3 rounded-lg border border-gray-600 focus:ring-2 focus:ring-indigo-500 outline-none">
-                                  <option value="1:1">Square (1:1)</option>
-                                  <option value="16:9">Landscape (16:9)</option>
-                                  <option value="9:16">Portrait (9:16)</option>
-                                  <option value="4:3">Standard (4:3)</option>
-                                  <option value="3:4">Tall (3:4)</option>
-                              </select>
-                          </div>
-                          <div className="flex-shrink-0 self-end">
-                              <button onClick={handleGenerate} disabled={isLoading || !prompt} className="flex items-center justify-center bg-indigo-600 text-white font-bold px-8 py-3 rounded-lg hover:bg-indigo-500 disabled:bg-gray-700 disabled:cursor-not-allowed transition-all w-full h-full shadow-lg shadow-indigo-500/20">
-                                  {isLoading ? <Spinner /> : "Generate Asset"}
-                              </button>
-                          </div>
-                      </div>
-                  </div>
-                  
-                  {(isLoading || generatedImage) && (
-                    <div className="relative min-h-[400px] flex items-center justify-center bg-gray-800 rounded-2xl border border-gray-700 overflow-hidden">
-                        {isLoading && (
-                            <div className="flex flex-col items-center">
-                                <Spinner />
-                                <p className="text-gray-300 mt-4 animate-pulse">Generating your masterpiece...</p>
-                            </div>
-                        )}
-                        {generatedImage && !isLoading && (
-                            <div className="p-8 space-y-6 w-full flex flex-col items-center">
-                                <img src={generatedImage.preview} alt="Generated" className="max-h-[500px] w-auto rounded-xl shadow-2xl border border-white/10"/>
-                                <div className="flex justify-center gap-4 pt-2">
-                                    <button onClick={() => setGeneratedImage(null)} className="text-gray-400 hover:text-white font-medium transition-colors">Generate Another</button>
-                                    <button onClick={() => onSendToLightBox(generatedImage)} className="bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-6 rounded-lg shadow-lg shadow-green-500/20 flex items-center gap-2 transform hover:scale-105 transition-all">
-                                        Send to Light Box <ArrowRightIcon className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                  )}
-              </div>
-          )}
-      </div>
-  );
-};
-
-// Temp Icon for calendar to fix missing ref
-const CalendarEventIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-    </svg>
-);
-
-const RouteBuilderView: React.FC = () => {
+const RoutesView: React.FC = () => {
+    const [messages, setMessages] = useState<RouteChatMessage[]>([
+        { role: 'model', text: 'I am your Strategy Consultant. What business process do you want to automate today?' }
+    ]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [activeWorkflow, setActiveWorkflow] = useState<Workflow | null>(null);
-    const [runningStepId, setRunningStepId] = useState<string | null>(null);
-    const logEndRef = useRef<HTMLDivElement>(null);
+    const [workflow, setWorkflow] = useState<Workflow | null>(null);
 
-    // Scroll logs to bottom
-    useEffect(() => {
-        logEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [activeWorkflow?.logs]);
-
-    const handleCreateRoute = async () => {
-        if (!input.trim()) return;
+    const handleSend = async (text: string) => {
+        if (!text.trim()) return;
+        
+        const newMessages = [...messages, { role: 'user', text } as RouteChatMessage];
+        setMessages(newMessages);
+        setInput('');
         setIsLoading(true);
-        setActiveWorkflow(null);
-        setRunningStepId(null);
 
         try {
-            const workflow = await GeminiService.generateWorkflowFromPrompt(input);
-            setActiveWorkflow(workflow);
+            // Convert to history format for service
+            const history = newMessages.map(m => ({
+                role: m.role,
+                parts: [{ text: m.text }]
+            }));
+
+            const response = await GeminiService.routeStrategistChat(history, text);
+            
+            setMessages(prev => [...prev, { 
+                role: 'model', 
+                text: response.text, 
+                options: response.options 
+            }]);
+
+            if (response.build_trigger && response.final_prompt) {
+                // Generate workflow
+                setMessages(prev => [...prev, { role: 'model', text: 'Generating your route workflow...' }]);
+                const wf = await GeminiService.generateWorkflowFromPrompt(response.final_prompt);
+                setWorkflow(wf);
+            }
+
         } catch (error) {
-            console.error("Failed to create route:", error);
-            alert("Could not generate route. Please try a detailed prompt.");
+            console.error(error);
+            setMessages(prev => [...prev, { role: 'model', text: 'Sorry, I encountered an error.' }]);
         } finally {
             setIsLoading(false);
         }
     };
 
-    const runRoute = async () => {
-        if (!activeWorkflow) return;
-        
-        const updatedWorkflow = { ...activeWorkflow, isActive: true, logs: [...(activeWorkflow.logs || []), "--- Starting Route Execution ---"] };
-        setActiveWorkflow(updatedWorkflow);
-
-        for (let i = 0; i < updatedWorkflow.steps.length; i++) {
-            const step = updatedWorkflow.steps[i];
-            setRunningStepId(step.id);
+    return (
+        <div className="p-8 max-w-5xl mx-auto pt-24 h-screen flex flex-col">
+            <h1 className="text-3xl font-bold text-white mb-6 flex items-center gap-2">
+                <MapIcon className="w-8 h-8 text-indigo-400" /> Route Builder
+            </h1>
             
-            // Log step start
-            setActiveWorkflow(prev => prev ? { ...prev, logs: [...prev.logs, `> Initiating step: ${step.name} [Actor: ${step.actor.toUpperCase()}]...`] } : null);
+            <div className="flex-grow bg-gray-900/50 border border-white/10 rounded-2xl p-6 overflow-hidden flex flex-col md:flex-row gap-6">
+                {/* Chat Area */}
+                <div className="flex-1 flex flex-col min-h-0">
+                    <div className="flex-grow overflow-y-auto space-y-4 mb-4 custom-scrollbar pr-2">
+                        {messages.map((msg, i) => (
+                            <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                <div className={`max-w-[80%] p-4 rounded-xl text-sm ${msg.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-200 border border-white/5'}`}>
+                                    <p>{msg.text}</p>
+                                    {msg.options && (
+                                        <div className="mt-3 flex flex-wrap gap-2">
+                                            {msg.options.map(opt => (
+                                                <button 
+                                                    key={opt}
+                                                    onClick={() => handleSend(opt)}
+                                                    className="bg-white/10 hover:bg-white/20 px-3 py-1 rounded-full text-xs font-bold transition-colors"
+                                                >
+                                                    {opt}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                        {isLoading && <div className="text-gray-500 text-xs animate-pulse">Strategist is thinking...</div>}
+                    </div>
+                    
+                    <div className="relative">
+                        <input 
+                            type="text" 
+                            value={input}
+                            onChange={e => setInput(e.target.value)}
+                            onKeyPress={e => e.key === 'Enter' && handleSend(input)}
+                            placeholder="Describe your goal..."
+                            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-indigo-500 outline-none"
+                        />
+                        <button 
+                            onClick={() => handleSend(input)}
+                            disabled={isLoading || !input.trim()}
+                            className="absolute right-2 top-2 bg-indigo-600 p-1.5 rounded-lg text-white disabled:opacity-50"
+                        >
+                            <ArrowRightIcon className="w-4 h-4" />
+                        </button>
+                    </div>
+                </div>
 
-            // Execute simulation via Gemini
-            try {
-                const stepOutput = await GeminiService.executeWorkflowStep(step.name, step.description, step.actor);
-                
-                // Update step status and logs
-                const newSteps = [...updatedWorkflow.steps];
-                newSteps[i] = { ...step, status: 'completed', output: stepOutput };
-                
-                setActiveWorkflow(prev => prev ? { 
-                    ...prev, 
-                    steps: newSteps, 
-                    progress: ((i + 1) / updatedWorkflow.steps.length) * 100,
-                    logs: [...prev.logs, `  [${step.actor === 'human' ? 'VERIFIED' : 'SUCCESS'}]: ${stepOutput}`]
-                } : null);
+                {/* Workflow Preview Area */}
+                <div className="w-full md:w-80 bg-black/20 border-l border-white/5 pl-6 hidden md:flex flex-col">
+                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Active Route</h3>
+                    {workflow ? (
+                        <div className="space-y-4 overflow-y-auto flex-grow">
+                             <div className="bg-indigo-900/20 border border-indigo-500/30 p-3 rounded-xl">
+                                <h4 className="font-bold text-white text-sm">{workflow.title}</h4>
+                                <p className="text-xs text-gray-400 mt-1">{workflow.description}</p>
+                             </div>
+                             <div className="space-y-2">
+                                {workflow.steps.map((step, i) => (
+                                    <div key={step.id} className="flex items-start gap-3 p-2 rounded-lg bg-white/5">
+                                        <div className="bg-gray-700 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-gray-300 flex-shrink-0">
+                                            {i + 1}
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-bold text-gray-200">{step.name}</p>
+                                            <p className="text-[10px] text-gray-500">{step.actor.toUpperCase()}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                             </div>
+                        </div>
+                    ) : (
+                        <div className="flex-grow flex items-center justify-center text-center p-4">
+                            <p className="text-gray-600 text-sm">Chat with the strategist to build a new workflow.</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
 
-            } catch (error) {
-                console.error("Step execution failed", error);
-                 setActiveWorkflow(prev => prev ? { ...prev, logs: [...prev.logs, `  [ERROR]: Failed to execute step ${step.name}`] } : null);
-            }
+const StudioView: React.FC<{ 
+    onGenerate?: (concept: ShotConcept) => void;
+    onSendToLightBox: (imageData: ImageData) => void;
+}> = ({ onGenerate, onSendToLightBox }) => {
+    const [inputs, setInputs] = useState({ subject: '', location: '', mood: '', lighting: '' });
+    const [concepts, setConcepts] = useState<ShotConcept[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    
+    // New state for images
+    const [conceptImages, setConceptImages] = useState<Record<number, ImageData | null>>({});
+    const [conceptImageLoading, setConceptImageLoading] = useState<Record<number, boolean>>({});
+
+    const handleGenerate = async () => {
+        setIsLoading(true);
+        try {
+            const results = await GeminiService.generateShotConcepts(inputs);
+            setConcepts(results);
+            setConceptImages({}); // Clear previous
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setIsLoading(false);
         }
-
-        setRunningStepId(null);
-        setActiveWorkflow(prev => prev ? { ...prev, isActive: false, logs: [...prev.logs, "--- Route Complete ---"] } : null);
     };
 
-    const getStepIcon = (iconName: string, actor: 'human' | 'system') => {
-        if (actor === 'human') return <UserIcon className="w-5 h-5 text-amber-400" />;
-
-        switch(iconName) {
-            case 'upload': return <ArrowRightIcon className="w-5 h-5 text-blue-400" />;
-            case 'ai': return <SparklesIcon className="w-5 h-5 text-purple-400" />;
-            case 'edit': return <WrenchScrewdriverIcon className="w-5 h-5 text-yellow-400" />;
-            case 'market': return <ShoppingCartIcon className="w-5 h-5 text-green-400" />;
-            case 'social': return <InstagramIcon className="w-5 h-5 text-pink-400" />;
-            case 'mail': return <PuzzlePieceIcon className="w-5 h-5 text-gray-400" />;
-            case 'check': return <CheckCircleIcon className="w-5 h-5 text-green-500" />;
-            default: return <BoltIcon className="w-5 h-5 text-gray-400" />;
+    const handleGenerateConceptImage = async (concept: ShotConcept, index: number) => {
+        setConceptImageLoading(prev => ({ ...prev, [index]: true }));
+        try {
+            const newBase64 = await GeminiService.generateImage(concept.visual_description, '16:9');
+            const newImageData = {
+                base64: newBase64,
+                mimeType: 'image/png',
+                preview: `data:image/png;base64,${newBase64}`,
+            };
+            setConceptImages(prev => ({ ...prev, [index]: newImageData }));
+        } catch (error) {
+            console.error("Error generating concept image", error);
+        } finally {
+            setConceptImageLoading(prev => ({ ...prev, [index]: false }));
         }
     };
 
     return (
-        <div className="p-4 md:p-8 max-w-6xl mx-auto min-h-[calc(100vh-100px)] flex flex-col space-y-6 pt-24">
-            <div className="text-center space-y-2">
-                <h1 className="text-3xl font-bold text-white flex items-center justify-center gap-3">
-                    <MapIcon className="w-8 h-8 text-amber-400" />
-                    Route Architect
-                </h1>
-                <p className="text-gray-400">Map out the perfect strategy. We'll identify what the AI does, and what you do.</p>
-            </div>
-
-            {/* Input Area */}
-            <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-xl">
-                <div className="flex flex-col md:flex-row gap-4">
-                    <input
-                        type="text"
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && !isLoading && handleCreateRoute()}
-                        placeholder="e.g., 'Launch a print store from my landscape photos'"
-                        className="flex-grow bg-gray-900 text-white placeholder-gray-500 p-4 rounded-lg border border-gray-600 focus:ring-2 focus:ring-amber-500 outline-none text-lg font-mono"
-                        disabled={isLoading || (activeWorkflow?.isActive ?? false)}
+        <div className="p-8 max-w-5xl mx-auto pt-24">
+             <h1 className="text-3xl font-bold text-white mb-6 flex items-center gap-2">
+                <StudioIcon className="w-8 h-8 text-indigo-400" /> Shot Architect
+            </h1>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="bg-white/5 border border-white/5 rounded-2xl p-6 space-y-4">
+                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Concept Inputs</h3>
+                    <input 
+                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-indigo-500 outline-none"
+                        placeholder="Subject (e.g., Cyberpunk Street Racer)"
+                        value={inputs.subject}
+                        onChange={e => setInputs({...inputs, subject: e.target.value})}
                     />
+                    <input 
+                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-indigo-500 outline-none"
+                        placeholder="Location (e.g., Neon Rain City)"
+                        value={inputs.location}
+                        onChange={e => setInputs({...inputs, location: e.target.value})}
+                    />
+                    <div className="grid grid-cols-2 gap-4">
+                        <input 
+                            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-indigo-500 outline-none"
+                            placeholder="Mood (e.g., Melancholy)"
+                            value={inputs.mood}
+                            onChange={e => setInputs({...inputs, mood: e.target.value})}
+                        />
+                        <input 
+                            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-indigo-500 outline-none"
+                            placeholder="Lighting (e.g., Blue Hour)"
+                            value={inputs.lighting}
+                            onChange={e => setInputs({...inputs, lighting: e.target.value})}
+                        />
+                    </div>
                     <button 
-                        onClick={handleCreateRoute}
-                        disabled={isLoading || !input.trim() || (activeWorkflow?.isActive ?? false)}
-                        className="bg-amber-600 hover:bg-amber-500 text-white font-bold py-3 px-8 rounded-lg transition-all flex items-center justify-center gap-2 text-lg whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={handleGenerate}
+                        disabled={isLoading}
+                        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
                     >
-                        {isLoading ? <Spinner /> : <>Map Route <MapIcon className="w-5 h-5" /></>}
+                        {isLoading ? <Spinner /> : 'Generate Concepts'}
                     </button>
                 </div>
-            </div>
 
-            <div className="flex-grow flex flex-col lg:flex-row gap-6 h-full min-h-[500px]">
-                {/* Route Visualizer */}
-                <div className="flex-1 bg-gray-900/50 rounded-xl border border-gray-700 p-8 overflow-y-auto relative">
-                    {!activeWorkflow && !isLoading && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 opacity-50">
-                            <MapIcon className="w-24 h-24 mb-4" />
-                            <p className="text-xl">No Route defined.</p>
-                        </div>
-                    )}
+                <div className="space-y-4">
+                    {concepts.map((concept, i) => (
+                        <div key={i} className="bg-gray-900/50 border border-white/10 rounded-2xl p-5 hover:border-indigo-500/30 transition-all cursor-pointer group">
+                             <div className="flex justify-between items-start mb-2">
+                                <h4 className="font-bold text-white text-lg">{concept.title}</h4>
+                                <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded text-gray-300 uppercase tracking-wider">{concept.difficulty}</span>
+                             </div>
+                             <p className="text-gray-400 text-sm mb-3">{concept.visual_description}</p>
+                             <div className="text-xs text-gray-500 font-mono bg-black/30 p-2 rounded border border-white/5">
+                                 {concept.technical_specs}
+                             </div>
 
-                    {activeWorkflow && (
-                        <div className="max-w-2xl mx-auto relative pb-20">
-                             <div className="flex justify-between items-start mb-8 border-b border-gray-700 pb-4">
-                                <div>
-                                    <h2 className="text-2xl font-bold text-white">{activeWorkflow.title}</h2>
-                                    <p className="text-gray-400 text-sm">{activeWorkflow.description}</p>
-                                </div>
-                                <button 
-                                    onClick={runRoute}
-                                    disabled={activeWorkflow.isActive}
-                                    className={`flex items-center gap-2 px-5 py-2 rounded-full font-bold text-white shadow-lg transition-all ${
-                                        activeWorkflow.isActive 
-                                        ? 'bg-gray-700 cursor-not-allowed' 
-                                        : 'bg-green-600 hover:bg-green-500 hover:scale-105'
-                                    }`}
-                                >
-                                    {activeWorkflow.isActive ? <Spinner /> : <PlayIcon className="w-5 h-5" />}
-                                    {activeWorkflow.isActive ? 'Executing...' : 'Run Route'}
-                                </button>
-                            </div>
-
-                            <div className="space-y-0 relative">
-                                {/* Connecting Line */}
-                                <div className="absolute left-[2.25rem] top-4 bottom-4 w-0.5 bg-gray-700 -z-10"></div>
-
-                                {activeWorkflow.steps.map((step, index) => {
-                                    const isRunning = runningStepId === step.id;
-                                    const isCompleted = step.status === 'completed';
-                                    const isHuman = step.actor === 'human';
-
-                                    return (
-                                        <div key={step.id} className="relative flex gap-6 pb-8 last:pb-0 group">
-                                            {/* Status Icon / Node */}
-                                            <div className={`w-20 h-20 rounded-full flex items-center justify-center border-4 flex-shrink-0 z-10 transition-all duration-500 bg-gray-900 shadow-xl ${
-                                                isRunning 
-                                                    ? (isHuman ? 'border-amber-500 text-amber-400 scale-110 shadow-amber-500/50' : 'border-indigo-500 text-indigo-400 scale-110 shadow-indigo-500/50') 
-                                                : isCompleted 
-                                                    ? 'border-green-500 text-green-500' 
-                                                : 'border-gray-700 text-gray-600'
-                                            }`}>
-                                                {isCompleted ? <CheckBadgeIcon className="w-10 h-10" /> : getStepIcon(step.icon || 'bolt', step.actor)}
+                             {/* Image Generation Section */}
+                             <div className="pt-4 border-t border-white/5 mt-4 relative">
+                                 {conceptImages[i] ? (
+                                     <div className="relative group/image">
+                                         <img src={conceptImages[i]!.preview} className="w-full h-40 object-cover rounded-lg border border-white/10 shadow-lg" alt={concept.title} />
+                                         <button 
+                                            onClick={() => onSendToLightBox(conceptImages[i]!)}
+                                            className="absolute bottom-2 right-2 bg-black/60 hover:bg-green-600 text-white p-2 rounded-lg backdrop-blur-sm transition-all opacity-0 group-hover/image:opacity-100 shadow-xl border border-white/10"
+                                            title="Edit in Light Box"
+                                         >
+                                            <ArrowRightIcon className="w-4 h-4" />
+                                         </button>
+                                     </div>
+                                 ) : (
+                                     <>
+                                        {conceptImageLoading[i] && (
+                                            <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/60 backdrop-blur-sm rounded-lg">
+                                                <ProgressBar label="Dreaming..." />
                                             </div>
-
-                                            {/* Content Card */}
-                                            <div className={`flex-grow p-4 rounded-lg border transition-all duration-300 relative ${
-                                                isRunning 
-                                                    ? (isHuman ? 'bg-amber-900/20 border-amber-500/50' : 'bg-indigo-900/20 border-indigo-500/50')
-                                                : isCompleted 
-                                                    ? 'bg-green-900/10 border-green-500/30' 
-                                                : 'bg-gray-800 border-gray-700'
-                                            }`}>
-                                                {/* Actor Badge */}
-                                                <div className={`absolute top-2 right-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${
-                                                    isHuman ? 'bg-amber-900/40 text-amber-300 border-amber-500/30' : 'bg-indigo-900/40 text-indigo-300 border-indigo-500/30'
-                                                }`}>
-                                                    {isHuman ? 'Human Task' : 'System Task'}
-                                                </div>
-
-                                                {isRunning && (
-                                                    <span className="absolute bottom-2 right-2 flex h-3 w-3">
-                                                        <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isHuman ? 'bg-amber-400' : 'bg-indigo-400'}`}></span>
-                                                        <span className={`relative inline-flex rounded-full h-3 w-3 ${isHuman ? 'bg-amber-500' : 'bg-indigo-500'}`}></span>
-                                                    </span>
-                                                )}
-
-                                                <h3 className={`text-lg font-bold ${isCompleted ? 'text-green-400' : 'text-white'}`}>
-                                                    {step.name}
-                                                </h3>
-                                                <p className="text-gray-400 text-sm mt-1">{step.description}</p>
-                                                
-                                                {/* Step Output Visualization */}
-                                                {step.output && (
-                                                    <div className="mt-3 p-2 bg-black/30 rounded border border-black/20 text-xs font-mono text-green-300/90 break-all">
-                                                        {'> ' + step.output}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    );
-                                })}
+                                        )}
+                                        <button 
+                                            onClick={() => handleGenerateConceptImage(concept, i)}
+                                            disabled={conceptImageLoading[i]}
+                                            className="w-full bg-white/5 hover:bg-white/10 text-gray-300 font-bold py-2 rounded-lg border border-white/10 transition-colors flex items-center justify-center gap-2 text-xs uppercase tracking-wide"
+                                        >
+                                            Generate Preview <PhotoIcon className="w-3 h-3" />
+                                        </button>
+                                     </>
+                                 )}
                             </div>
                         </div>
+                    ))}
+                    {concepts.length === 0 && !isLoading && (
+                        <div className="h-full flex items-center justify-center text-gray-600 border border-dashed border-white/5 rounded-2xl min-h-[300px]">
+                            Enter details to generate shot lists.
+                        </div>
                     )}
-                </div>
-
-                {/* Terminal / Log View */}
-                <div className="lg:w-1/3 bg-black rounded-xl border border-gray-700 p-4 font-mono text-xs text-green-400 flex flex-col shadow-2xl h-64 lg:h-auto">
-                    <div className="flex items-center justify-between border-b border-gray-800 pb-2 mb-2">
-                        <span className="font-bold text-gray-400 flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                            <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                            <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                            ROUTE_LOGS
-                        </span>
-                        <span className="text-gray-600">v1.0.5</span>
-                    </div>
-                    <div className="flex-grow overflow-y-auto space-y-1 custom-scrollbar">
-                        {activeWorkflow?.logs && activeWorkflow.logs.length > 0 ? (
-                            activeWorkflow.logs.map((log, i) => (
-                                <div key={i} className={`${log.includes('[ERROR]') ? 'text-red-400' : ''} ${log.includes('---') ? 'text-gray-500 py-2' : ''}`}>
-                                    {log}
-                                </div>
-                            ))
-                        ) : (
-                             <div className="text-gray-600 italic">Route planner ready. Waiting for input...</div>
-                        )}
-                        <div ref={logEndRef} />
-                    </div>
                 </div>
             </div>
         </div>
     );
 };
 
-
 const App: React.FC = () => {
-    const [view, setView] = useState<AppView>(AppView.WELCOME);
-    const [authInitialMode, setAuthInitialMode] = useState<'login' | 'signup'>('login');
-    const [activeImage, setActiveImage] = useState<ActiveImage | null>(null);
-    const [portfolioImages, setPortfolioImages] = useState<ActiveImage[]>([]);
+    const [activeView, setActiveView] = useState<AppView>(AppView.WELCOME);
     const [user, setUser] = useState<User | null>(null);
+    const [activeImage, setActiveImage] = useState<ActiveImage | null>(null);
+    const [connections, setConnections] = useState<Connections>({ 'Instagram': true });
     const [isApiKeySelected, setIsApiKeySelected] = useState(false);
-    const [connections, setConnections] = useState<Connections>({
-      'Adobe Stock': true,
-      'Getty Images': false,
-      'Shutterstock': true,
-      'Alamy': false,
-      '500px': true,
-      'Etsy': false,
-      'Redbubble': true,
-      'Society6': false,
-      'Fine Art America': false,
-      'Instagram': true,
-      'Pinterest': false,
-      'TikTok': true,
-      'X (Twitter)': false,
-      'Facebook': false
-    });
-    
-    // --- Initialization & Auth Check ---
-    useEffect(() => {
-        // 1. Check Auth
-        const currentUser = AuthService.getCurrentUser();
-        if (currentUser) {
-            setUser(currentUser);
-        }
+    const [portfolioImages, setPortfolioImages] = useState<ActiveImage[]>([]);
 
-        // 2. Check API Key
-        const checkKey = async () => {
+    // Check for API key on mount
+    useEffect(() => {
+        const checkApiKey = async () => {
             if ((window as any).aistudio) {
                 const hasKey = await (window as any).aistudio.hasSelectedApiKey();
                 setIsApiKeySelected(hasKey);
+            } else {
+                // Fallback or dev mode check
+                setIsApiKeySelected(!!process.env.API_KEY);
             }
         };
-        checkKey();
-
-        // 3. Load Portfolio from IndexedDB
-        const loadSavedImages = async () => {
-            const images = await StorageService.getAllImages();
-            // Sort by last modified desc
-            images.sort((a, b) => (b.lastModified || 0) - (a.lastModified || 0));
-            setPortfolioImages(images);
-        };
-        loadSavedImages();
-
+        checkApiKey();
     }, []);
 
-    // Explicit handler to open key selection (passed to settings)
-    const handleConnectGoogleCloud = async () => {
-        if ((window as any).aistudio) {
-            try {
-                await (window as any).aistudio.openSelectKey();
-                setIsApiKeySelected(true);
-            } catch (e) {
-                console.error("Failed to select key", e);
-            }
-        } else {
-            console.warn("AI Studio interface not available");
-        }
-    };
-    
     const handleLoginSuccess = (loggedInUser: User) => {
         setUser(loggedInUser);
-        setView(AppView.LIGHT_BOX);
+        setActiveView(AppView.LIGHT_BOX);
     };
 
     const handleLogout = () => {
-        AuthService.logout();
         setUser(null);
-        setView(AppView.WELCOME);
+        setActiveView(AppView.WELCOME);
     };
 
-    const handlePortfolioUpdate = async (imageToUpdate: ActiveImage) => {
-        // 1. Update local state for instant UI feedback
-        setPortfolioImages(prev => {
-            const existingIndex = prev.findIndex(p => p.id === imageToUpdate.id);
-            if (existingIndex > -1) {
-                const newPortfolio = [...prev];
-                newPortfolio[existingIndex] = imageToUpdate;
-                return newPortfolio;
-            } else {
-                return [imageToUpdate, ...prev];
-            }
-        });
-
-        // 2. Persist to IndexedDB (Fire and forget)
-        StorageService.saveImage(imageToUpdate).catch(err => console.error("Auto-save failed", err));
-    };
-
-    const handleSignup = () => {
-        if (user) {
-            setView(AppView.LIGHT_BOX);
-        } else {
-            setAuthInitialMode('signup');
-            setView(AppView.LOGIN);
-        }
-    };
-
-    const handleLogin = () => {
-         if (user) {
-            setView(AppView.LIGHT_BOX);
-        } else {
-            setAuthInitialMode('login');
-            setView(AppView.LOGIN);
-        }
-    };
-
-    const handleSendToLightBox = (imageData: ImageData) => {
+    const handleSendToLightBox = (imageData: ImageData, shouldAnalyze: boolean) => {
         const newImage: ActiveImage = {
             id: Date.now().toString(),
             data: imageData,
             analysis: null,
             isAnalyzed: false,
-            isLoading: false,
+            isLoading: shouldAnalyze
         };
         setActiveImage(newImage);
-        handlePortfolioUpdate(newImage); 
-        setView(AppView.LIGHT_BOX);
+        setActiveView(AppView.LIGHT_BOX);
     };
     
-    const handleSwitchToEdit = (imageData: ImageData, existingAnalysis?: AnalysisResult | null) => {
-        const newImage = {
-             id: Date.now().toString(),
-            data: imageData,
-            analysis: existingAnalysis || null, // Persist analysis if available
-            isAnalyzed: !!existingAnalysis,
-            isLoading: false
-        };
-        setActiveImage(newImage);
-        handlePortfolioUpdate(newImage);
-        setView(AppView.EDIT);
-    };
-
-    const renderCurrentView = () => {
-        switch (view) {
-            case AppView.LOGIN:
-                return <LoginView onLoginSuccess={handleLoginSuccess} initialMode={authInitialMode} />;
-            case AppView.LIGHT_BOX:
-                return <LightBoxView activeImage={activeImage} setActiveImage={setActiveImage} switchToEditView={(data) => handleSwitchToEdit(data, activeImage?.analysis)} connections={connections} isApiKeySelected={isApiKeySelected} setIsApiKeySelected={setIsApiKeySelected} onPortfolioUpdate={handlePortfolioUpdate} onNavigateToStudio={() => setView(AppView.STUDIO)} onSelectApiKey={handleConnectGoogleCloud} />;
-            case AppView.PORTFOLIO:
-                return <PortfolioView portfolioImages={portfolioImages} />;
-            case AppView.EDIT:
-                return <EditView initialImage={activeImage?.data || null} analysis={activeImage?.analysis || null} onSendToLightBox={handleSendToLightBox} />;
-            case AppView.STUDIO:
-                return <StudioView onSendToLightBox={handleSendToLightBox} portfolioImages={portfolioImages} />;
-            case AppView.ROUTES:
-                return <RouteBuilderView />;
-            case AppView.EARNINGS:
-                return <EarningsDashboard />;
-            case AppView.SETTINGS:
-                return (
-                    <SettingsView 
-                        connections={connections} 
-                        setConnections={setConnections} 
-                        isApiKeySelected={isApiKeySelected}
-                        onConnectGoogleCloud={handleConnectGoogleCloud}
-                    />
-                );
-            default:
-                return <LightBoxView activeImage={activeImage} setActiveImage={setActiveImage} switchToEditView={(data) => handleSwitchToEdit(data, activeImage?.analysis)} connections={connections} isApiKeySelected={isApiKeySelected} setIsApiKeySelected={setIsApiKeySelected} onPortfolioUpdate={handlePortfolioUpdate} onNavigateToStudio={() => setView(AppView.STUDIO)} onSelectApiKey={handleConnectGoogleCloud} />;
+    const handlePortfolioUpdate = (updatedImage: ActiveImage) => {
+        // Update active image if it matches
+        if (activeImage?.id === updatedImage.id) {
+            setActiveImage(updatedImage);
         }
+        
+        // Update list
+        setPortfolioImages(prev => {
+            const index = prev.findIndex(img => img.id === updatedImage.id);
+            if (index > -1) {
+                const newList = [...prev];
+                newList[index] = updatedImage;
+                return newList;
+            }
+            return [updatedImage, ...prev];
+        });
     };
-    
-    // Only show Header if not in Welcome or Login views
-    const showHeader = view !== AppView.WELCOME && view !== AppView.LOGIN;
-
-    if (view === AppView.WELCOME) {
-        return <WelcomeScreen onSignup={handleSignup} onLogin={handleLogin} />;
-    }
 
     return (
-        <div className="min-h-screen bg-surface text-gray-100 font-sans selection:bg-indigo-500/30">
-            {showHeader && <Header activeView={view} setActiveView={setView} user={user} onLogout={handleLogout} />}
+        <div className="bg-[#05050A] min-h-screen text-white font-sans selection:bg-indigo-500/30">
+            {user && (
+                <Header 
+                    activeView={activeView} 
+                    setActiveView={setActiveView} 
+                    user={user}
+                    onLogout={handleLogout}
+                />
+            )}
+
             <main>
-                {renderCurrentView()}
+                {activeView === AppView.WELCOME && (
+                    <WelcomeScreen 
+                        onLogin={() => setActiveView(AppView.LOGIN)} 
+                        onSignup={() => setActiveView(AppView.LOGIN)} 
+                    />
+                )}
+
+                {activeView === AppView.LOGIN && (
+                    <LoginView onLoginSuccess={handleLoginSuccess} />
+                )}
+
+                {user && (
+                    <>
+                        {activeView === AppView.LIGHT_BOX && (
+                            <LightBoxView 
+                                activeImage={activeImage} 
+                                setActiveImage={setActiveImage} 
+                                switchToEditView={(imgData) => {
+                                    setActiveImage(prev => prev ? {...prev, data: imgData} : null); 
+                                    setActiveView(AppView.EDIT);
+                                }}
+                                connections={connections}
+                                isApiKeySelected={isApiKeySelected}
+                                setIsApiKeySelected={setIsApiKeySelected}
+                                onPortfolioUpdate={handlePortfolioUpdate}
+                                onNavigateToStudio={() => setActiveView(AppView.STUDIO)}
+                                onSelectApiKey={() => (window as any).aistudio?.openSelectKey()}
+                                onUploadNew={() => setActiveImage(null)}
+                            />
+                        )}
+
+                        {activeView === AppView.EDIT && (
+                            <EditView 
+                                initialImage={activeImage?.data || null}
+                                analysis={activeImage?.analysis || null}
+                                onSendToLightBox={handleSendToLightBox}
+                                onUploadNew={() => {
+                                    setActiveImage(null);
+                                    setActiveView(AppView.LIGHT_BOX);
+                                }}
+                            />
+                        )}
+
+                        {activeView === AppView.STUDIO && (
+                            <StudioView 
+                                onGenerate={(concept) => console.log(concept)} 
+                                onSendToLightBox={(img) => handleSendToLightBox(img, false)}
+                            />
+                        )}
+
+                        {activeView === AppView.ROUTES && (
+                             <RoutesView />
+                        )}
+
+                        {activeView === AppView.EARNINGS && <EarningsDashboard />}
+                        
+                        {activeView === AppView.PORTFOLIO && <PortfolioView portfolioImages={portfolioImages} />}
+                        
+                        {activeView === AppView.SETTINGS && (
+                            <SettingsView 
+                                connections={connections} 
+                                setConnections={setConnections}
+                                isApiKeySelected={isApiKeySelected}
+                                onConnectGoogleCloud={() => (window as any).aistudio?.openSelectKey()}
+                            />
+                        )}
+                    </>
+                )}
             </main>
         </div>
     );

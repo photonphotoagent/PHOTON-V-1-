@@ -9,7 +9,8 @@ import {
     InstagramIcon, PinterestIcon, LinkedInIcon, WrenchScrewdriverIcon, 
     ViewfinderIcon, SunIcon, BookOpenIcon, XCircleIcon, ArrowDownTrayIcon,
     SparklesIcon, PaintBrushIcon, TikTokIcon, FacebookIcon, TwitterIcon,
-    DollarSignIcon, TagIcon, RectangleStackIcon, EyeIcon, AdjustmentsIcon, BoltIcon
+    DollarSignIcon, TagIcon, RectangleStackIcon, EyeIcon, AdjustmentsIcon, BoltIcon,
+    ArrowUpTrayIcon
 } from './icons';
 
 // --- Sub-components ---
@@ -528,7 +529,8 @@ export const AnalysisDashboard: React.FC<{
     editingSuggestion: string;
     isApiKeySelected: boolean;
     onSelectApiKey: () => void;
-}> = ({ activeImage, connections, onReset, onReAnalyze, onApplyEdit, onDistribute, onDownloadImage, distributionStatus, distributionResult, isEditing, editingSuggestion, isApiKeySelected, onSelectApiKey }) => {
+    onUploadNew: () => void;
+}> = ({ activeImage, connections, onReset, onReAnalyze, onApplyEdit, onDistribute, onDownloadImage, distributionStatus, distributionResult, isEditing, editingSuggestion, isApiKeySelected, onSelectApiKey, onUploadNew }) => {
     const [isQuickFixing, setIsQuickFixing] = useState(false);
     const [editMode, setEditMode] = useState<'standard' | 'generative'>('standard');
     
@@ -537,7 +539,7 @@ export const AnalysisDashboard: React.FC<{
     const { scores, monetization_strategy, curation_insights, social_media_strategy, market_comparison, creative_remixes } = analysis;
     
     // Safety check for older analysis versions without the new scores structure
-    const monetizationScore = scores?.monetization || analysis.monetization_score?.overall || 0;
+    const monetizationScore = scores?.monetization || 0;
     const socialScore = scores?.social || 0;
     const portfolioScore = scores?.portfolio || 0;
 
@@ -592,6 +594,12 @@ Actionable Fix: ${curation_insights.actionable_fix}
                     <ArrowRightIcon className="w-4 h-4 rotate-180 group-hover:-translate-x-1 transition-transform" /> <span className="text-sm font-medium">Return to Light Box</span>
                 </button>
                 <div className="flex gap-3">
+                    <button 
+                        onClick={onUploadNew}
+                        className="flex items-center space-x-2 bg-indigo-600/80 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm border border-indigo-500/20 transition-colors font-bold shadow-lg"
+                    >
+                        <ArrowUpTrayIcon className="w-4 h-4" /> <span>Upload New</span>
+                    </button>
                     <button 
                         onClick={onReAnalyze}
                         className="flex items-center space-x-2 bg-gray-800/50 hover:bg-gray-800 text-gray-300 px-4 py-2 rounded-lg text-sm border border-white/5 transition-colors font-bold"

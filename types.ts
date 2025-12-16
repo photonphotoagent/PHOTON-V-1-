@@ -1,3 +1,4 @@
+
 import { Chat } from "@google/genai";
 
 export enum AppView {
@@ -26,6 +27,13 @@ export interface ChatMessage {
   role: 'user' | 'model';
   text: string;
   workflow?: Workflow; // Optional: The model might return a workflow
+}
+
+export interface RouteChatMessage {
+  role: 'user' | 'model';
+  text: string;
+  options?: string[];
+  build_trigger?: boolean;
 }
 
 export interface WorkflowStep {

@@ -31,7 +31,7 @@ export const PortfolioView: React.FC<{
                                 <div className="text-center text-white">
                                     <p className="text-sm font-bold">View Analytics</p>
                                     {image.analysis && (
-                                         <p className="text-xs">{image.analysis.monetization_score.overall}/99 Score</p>
+                                         <p className="text-xs">{image.analysis.scores.monetization}/99 Score</p>
                                     )}
                                 </div>
                             </div>

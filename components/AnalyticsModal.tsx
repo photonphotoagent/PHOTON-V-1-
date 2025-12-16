@@ -152,10 +152,10 @@ export const AnalyticsModal: React.FC<{
                                     <h3 className="text-lg font-semibold text-gray-300 mb-3">AI Insights & Metadata</h3>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
-                                             <ScoreBar label="Tech Quality" score={image.analysis.monetization_score.technical_quality_score} />
-                                             <ScoreBar label="Commercial Appeal" score={image.analysis.monetization_score.commercial_appeal_score} />
-                                             <ScoreBar label="Market Rarity" score={image.analysis.monetization_score.market_rarity_score} />
-                                             <ScoreBar label="Emotional Resonance" score={image.analysis.monetization_score.emotional_resonance_score} />
+                                             <ScoreBar label="Tech Quality" score={image.analysis.scores.technical_quality} />
+                                             <ScoreBar label="Commercial Appeal" score={image.analysis.scores.monetization} />
+                                             <ScoreBar label="Artistic Merit" score={image.analysis.scores.portfolio} />
+                                             <ScoreBar label="Viral Potential" score={image.analysis.scores.social} />
                                         </div>
                                         <div>
                                              <h4 className="text-sm font-bold text-gray-400 mb-2">Keywords</h4>

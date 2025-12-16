@@ -1,12 +1,5 @@
 import { GoogleGenAI, Modality, Chat, Type } from "@google/genai";
-import { AnalysisResult, Workflow, ShotConcept } from "../types";
-
-const API_KEY = process.env.API_KEY;
-if (!API_KEY) {
-  throw new Error("API_KEY environment variable not set");
-}
-
-const ai = new GoogleGenAI({ apiKey: API_KEY });
+import { AnalysisResult, Workflow, ShotConcept, ImageAdjustments } from "../types";
 
 const fileToGenerativePart = (base64: string, mimeType: string) => {
   return {
@@ -43,6 +36,7 @@ Market Comparison (The Reality Check):
 
 
 export const analyzeImage = async (imageBase64: string, mimeType: string): Promise<AnalysisResult> => {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const imagePart = fileToGenerativePart(imageBase64, mimeType);
     const textPart = { text: "Analyze this image. Guide me on how to improve and sell it." };
     
@@ -166,13 +160,23 @@ export const analyzeImage = async (imageBase64: string, mimeType: string): Promi
     }
 };
 
-export const editImage = async (prompt: string, imageBase64: string, mimeType: string): Promise<string> => {
+export const editImage = async (prompt: string, imageBase64: string, mimeType: string, maskBase64?: string): Promise<string> => {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const imagePart = fileToGenerativePart(imageBase64, mimeType);
     const textPart = { text: prompt };
+    
+    // Construct parts array
+    const parts: any[] = [imagePart, textPart];
+    
+    if (maskBase64) {
+        // Send mask as a second image part.
+        // Ideally, this should be a black and white image where white is the edit area.
+        parts.splice(1, 0, fileToGenerativePart(maskBase64, 'image/png'));
+    }
 
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
-        contents: { parts: [imagePart, textPart] },
+        contents: { parts: parts },
         config: {
             responseModalities: [Modality.IMAGE],
         },
@@ -187,6 +191,7 @@ export const editImage = async (prompt: string, imageBase64: string, mimeType: s
 };
 
 export const generateImage = async (prompt: string, aspectRatio: string): Promise<string> => {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateImages({
         model: 'imagen-4.0-generate-001',
         prompt: prompt,
@@ -201,27 +206,70 @@ export const generateImage = async (prompt: string, aspectRatio: string): Promis
     return base64ImageBytes;
 };
 
-// Simulate upscaling - in a real app, this would call a specialized model/API.
-const simulateNetworkDelay = (min = 500, max = 1500) => 
-    new Promise(resolve => setTimeout(resolve, min + Math.random() * (max - min)));
-
+/**
+ * Real client-side upscaling using Canvas to target ~24 Megapixels.
+ * 24MP is roughly 6000x4000.
+ */
 export const upscaleImage = async (imageBase64: string, mimeType: string): Promise<string> => {
-    console.log("Simulating upscale to 26MP...");
-    // Use a longer delay to simulate a more intensive operation
-    await simulateNetworkDelay(3000, 5000); 
-    // For this simulation, we'll just return the original image data.
-    // A real implementation would return new, higher-resolution image data.
-    console.log("Upscale simulation complete.");
-    return imageBase64;
+    // Target: 24 Megapixels (24,000,000 pixels)
+    const TARGET_MEGAPIXELS = 24 * 1000 * 1000;
+
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.src = `data:${mimeType};base64,${imageBase64}`;
+        
+        img.onload = () => {
+            try {
+                const currentPixels = img.width * img.height;
+                const scaleFactor = Math.sqrt(TARGET_MEGAPIXELS / currentPixels);
+                
+                // Only upscale if the image is smaller than the target
+                const finalScale = scaleFactor > 1 ? scaleFactor : 1; 
+
+                const targetWidth = Math.floor(img.width * finalScale);
+                const targetHeight = Math.floor(img.height * finalScale);
+
+                console.log(`Upscaling image from ${img.width}x${img.height} to ${targetWidth}x${targetHeight}`);
+
+                const canvas = document.createElement('canvas');
+                canvas.width = targetWidth;
+                canvas.height = targetHeight;
+                const ctx = canvas.getContext('2d');
+                
+                if (!ctx) {
+                    reject(new Error("Could not get canvas context"));
+                    return;
+                }
+
+                // Use high quality smoothing
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+                
+                ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+                
+                // Get base64 (remove prefix)
+                const dataUrl = canvas.toDataURL(mimeType, 0.92); // High quality
+                const base64 = dataUrl.split(',')[1];
+                
+                resolve(base64);
+            } catch (e) {
+                console.error("Upscale failed", e);
+                reject(e);
+            }
+        };
+        img.onerror = (e) => reject(new Error("Failed to load image for upscaling"));
+    });
 };
 
 export const createChat = (): Chat => {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     return ai.chats.create({
         model: 'gemini-2.5-flash',
     });
 };
 
 export const generateWorkflowFromPrompt = async (userPrompt: string): Promise<Workflow> => {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const prompt = `You are a Route Architect helping a creator build a business.
     The user wants to save time on this task: "${userPrompt}".
     
@@ -283,6 +331,7 @@ export const generateWorkflowFromPrompt = async (userPrompt: string): Promise<Wo
  * Simulates the execution of a step by asking the AI to generate a realistic log message/result.
  */
 export const executeWorkflowStep = async (stepName: string, stepDescription: string, actor: 'human' | 'system'): Promise<string> => {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const prompt = `You are the system kernel for an AI photography agent.
     You are currently processing the step: "${stepName}" (${stepDescription}).
     The actor for this step is: ${actor.toUpperCase()}.
@@ -303,6 +352,7 @@ export const executeWorkflowStep = async (stepName: string, stepDescription: str
 export const generateShotConcepts = async (
     inputs: { subject: string; location: string; mood: string; lighting: string }
 ): Promise<ShotConcept[]> => {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const prompt = `You are a high-concept Creative Director for photography. 
     The photographer wants to shoot a "${inputs.subject}" in a "${inputs.location}" with "${inputs.mood}" vibes and "${inputs.lighting}" lighting.
     
@@ -346,5 +396,112 @@ export const generateShotConcepts = async (
     } catch (e) {
         console.error("Failed to parse shot concepts JSON:", e);
         throw new Error("Failed to generate shot concepts.");
+    }
+};
+
+export const routeStrategistChat = async (history: { role: string; parts: { text: string }[] }[], newMessage: string): Promise<{ text: string, options?: string[], build_trigger?: boolean, final_prompt?: string }> => {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const model = ai.models.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+    // Specialized system instruction for the "Consultation" phase
+    const systemInstruction = `You are a Senior Strategy Consultant for creative businesses. Your goal is to gather requirements for a new automation workflow ("Route").
+    
+    The user wants to build a new business process. You must ask 1-2 clarifying questions to understand their specific goal, budget, and risk tolerance.
+    Do NOT build the route yet. First, consult.
+    
+    If the user has provided enough info, you should propose 2-3 distinct "Strategic Options" (e.g., "Fast & Lean Launch" vs "Premium Brand Launch").
+    
+    If the user selects an option or gives a final confirmation, output a specific JSON trigger to build the route.
+    
+    Output Format: JSON ONLY.
+    Structure:
+    {
+      "text": "Your conversational response here.",
+      "options": ["Option 1", "Option 2"], // Optional: Suggest choices if appropriate
+      "build_trigger": false, // Set to TRUE only when ready to generate the final workflow
+      "final_prompt": "" // If build_trigger is true, summarize the user's intent into a single detailed prompt for the builder.
+    }`;
+
+    // Convert history to format expected by Gemini 1.5/2.5 (Content object)
+    // Note: simplifcation for the mock service context, usually we'd maintain a ChatSession
+    const chatSession = await ai.chats.create({
+        model: 'gemini-2.5-flash',
+        config: {
+            systemInstruction: systemInstruction,
+            responseMimeType: "application/json"
+        },
+        history: history.map(h => ({
+            role: h.role,
+            parts: h.parts
+        }))
+    });
+
+    const result = await chatSession.sendMessage(newMessage);
+    const jsonText = result.response.text();
+    
+    try {
+        return JSON.parse(jsonText);
+    } catch (e) {
+        console.error("Failed to parse chat JSON", e);
+        return { text: "I'm analyzing that..." };
+    }
+};
+
+export const generateAdjustments = async (prompt: string, referenceImageBase64?: string): Promise<Partial<ImageAdjustments>> => {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    
+    const contents: any[] = [{ text: prompt }];
+    if (referenceImageBase64) {
+        contents.push(fileToGenerativePart(referenceImageBase64, 'image/png'));
+    }
+
+    const systemInstruction = `You are a professional colorist and photo editor. 
+    Map the user's request (and optional reference image style) to the specific slider values provided.
+    
+    Ranges:
+    - exposure: 50 to 150 (100 is neutral)
+    - contrast: 50 to 150 (100 is neutral)
+    - saturation: 0 to 200 (100 is neutral)
+    - warmth: -100 (cool/blue) to 100 (warm/sepia) (0 is neutral)
+    - tint: -180 to 180 (hue rotation) (0 is neutral)
+    - vibrance: 0 to 200 (100 is neutral)
+    - highlights: 50 to 150 (100 is neutral)
+    - shadows: 50 to 150 (100 is neutral)
+    - blur: 0 to 20 (0 is sharp)
+    - grain: 0 to 100 (0 is clean)
+    - vignette: 0 to 100 (0 is none)
+    
+    Return a JSON object with only the keys that need to change. Do not return all keys if they are default.`;
+
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: contents,
+        config: {
+            systemInstruction: systemInstruction,
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                    exposure: { type: Type.NUMBER },
+                    contrast: { type: Type.NUMBER },
+                    saturation: { type: Type.NUMBER },
+                    warmth: { type: Type.NUMBER },
+                    tint: { type: Type.NUMBER },
+                    vibrance: { type: Type.NUMBER },
+                    highlights: { type: Type.NUMBER },
+                    shadows: { type: Type.NUMBER },
+                    blur: { type: Type.NUMBER },
+                    grain: { type: Type.NUMBER },
+                    vignette: { type: Type.NUMBER }
+                }
+            }
+        }
+    });
+
+    try {
+        return JSON.parse(response.text.trim()) as Partial<ImageAdjustments>;
+    } catch (e) {
+        console.error("Failed to generate adjustments", e);
+        return {};
     }
 };
