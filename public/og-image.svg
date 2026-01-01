@@ -1,0 +1,80 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0D0906"/>
+      <stop offset="50%" stop-color="#1A1410"/>
+      <stop offset="100%" stop-color="#0D0906"/>
+    </linearGradient>
+    <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#C9A962"/>
+      <stop offset="50%" stop-color="#E07B39"/>
+      <stop offset="100%" stop-color="#C9A962"/>
+    </linearGradient>
+    <linearGradient id="fingerprintGradient" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#faaa4b"/>
+      <stop offset="40%" stop-color="#d4c478"/>
+      <stop offset="100%" stop-color="#b3d8a5"/>
+    </linearGradient>
+    <radialGradient id="glowLeft" cx="0%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#C9A962" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#C9A962" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowRight" cx="100%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#8FAF7E" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#8FAF7E" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bgGradient)"/>
+
+  <!-- Ambient glows -->
+  <ellipse cx="200" cy="315" rx="400" ry="300" fill="url(#glowLeft)"/>
+  <ellipse cx="1000" cy="315" rx="400" ry="300" fill="url(#glowRight)"/>
+
+  <!-- Subtle texture pattern -->
+  <g opacity="0.03">
+    <line x1="0" y1="0" x2="1200" y2="630" stroke="#C9A962" stroke-width="1"/>
+    <line x1="200" y1="0" x2="1200" y2="500" stroke="#C9A962" stroke-width="1"/>
+    <line x1="400" y1="0" x2="1200" y2="400" stroke="#C9A962" stroke-width="1"/>
+    <line x1="0" y1="200" x2="1000" y2="630" stroke="#C9A962" stroke-width="1"/>
+  </g>
+
+  <!-- Fingerprint icon -->
+  <g transform="translate(100, 215) scale(3)">
+    <circle cx="34" cy="34" r="32" fill="none" stroke="url(#fingerprintGradient)" stroke-width="3.5"/>
+    <g fill="none" stroke="url(#fingerprintGradient)" stroke-width="3" stroke-linecap="round">
+      <path d="M18 18 C10 28, 10 44, 18 54"/>
+      <path d="M24 14 C12 28, 12 46, 24 58"/>
+      <path d="M32 12 C16 24, 14 48, 30 60"/>
+      <path d="M40 14 C22 24, 18 48, 36 58"/>
+      <path d="M48 18 C28 26, 24 46, 42 54"/>
+      <path d="M52 26 C36 32, 32 44, 46 50"/>
+      <path d="M52 34 C44 38, 42 44, 48 48"/>
+    </g>
+  </g>
+
+  <!-- Main text: CONSOLE (huge) -->
+  <text x="320" y="380" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="160" font-weight="800" fill="url(#textGradient)" letter-spacing="-8">
+    CONSOLE
+  </text>
+
+  <!-- Subtitle: the modern creative -->
+  <text x="325" y="260" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="36" font-weight="400" fill="#E8E2D6" letter-spacing="2">
+    the modern creative
+  </text>
+
+  <!-- Tagline -->
+  <text x="325" y="440" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="24" font-weight="500" fill="#A89F91" letter-spacing="1">
+    The Operating System for Creatives
+  </text>
+
+  <!-- photon wordmark -->
+  <text x="325" y="520" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="32" font-weight="500">
+    <tspan fill="#b3d8a5">phot</tspan><tspan fill="#faaa4b">on</tspan>
+  </text>
+
+  <!-- Border accent -->
+  <rect x="0" y="0" width="1200" height="4" fill="url(#textGradient)"/>
+  <rect x="0" y="626" width="1200" height="4" fill="url(#textGradient)"/>
+</svg>

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { AppView, ChatMessage as ChatMessageType, AnalysisResult, ImageData, ActiveImage, Connections, PlatformName, DistributionStatus, DistributionResult, Platform, User, Workflow, WorkflowStep, EditHistoryItem, ImageAdjustments, CalendarEvent, ShotConcept, RouteChatMessage } from './types';
+import { AppView, ChatMessage as ChatMessageType, AnalysisResult, ImageData, ActiveImage, Connections, PlatformName, DistributionStatus, DistributionResult, Platform, User, Workflow, WorkflowStep, EditHistoryItem, ImageAdjustments, CalendarEvent, ShotConcept, RouteChatMessage, AISettings, DEFAULT_AI_SETTINGS } from './types';
 import * as GeminiService from './services/geminiService';
 import * as DistributionService from './services/distributionService';
 import * as AuthService from './services/authService';
@@ -16,21 +16,26 @@ import { LoginView } from './components/LoginView';
 import { AnalysisDashboard } from './components/AnalysisDashboard';
 
 // --- Constants ---
+// Platform logos - mix of Simple Icons CDN and inline SVGs for missing icons
+const ADOBE_STOCK_SVG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M14.5 3L21 21h-4l-1.7-5H9.3L7.6 21H3.6l6.5-18h4.4zm-2.2 5.5L10 16h4.6l-2.3-7.5z'/%3E%3C/svg%3E";
+const GETTY_SVG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z'/%3E%3C/svg%3E";
+const SHUTTERSTOCK_SVG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5-9h10v2H7z'/%3E%3C/svg%3E";
+
 export const platforms: Platform[] = [
-    { name: 'Adobe Stock', category: 'Stock', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/Adobe_Stock_logo.svg/2560px-Adobe_Stock_logo.svg.png' },
-    { name: 'Getty Images', category: 'Stock', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Getty_Images_logo.svg/2560px-Getty_Images_logo.svg.png' },
-    { name: 'Shutterstock', category: 'Stock', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Shutterstock_logo.svg/2560px-Shutterstock_logo.svg.png' },
-    { name: 'Alamy', category: 'Stock', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Alamy_Logo.svg/2560px-Alamy_Logo.svg.png' },
-    { name: '500px', category: 'Stock', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/500px_logo.svg/2560px-500px_logo.svg.png' },
-    { name: 'Etsy', category: 'Print', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Etsy_logo.svg/2560px-Etsy_logo.svg.png' },
-    { name: 'Redbubble', category: 'Print', logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/5/52/Redbubble_logo.svg/1200px-Redbubble_logo.svg.png' },
-    { name: 'Society6', category: 'Print', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Society6_logo.svg/2560px-Society6_logo.svg.png' },
-    { name: 'Fine Art America', category: 'Print', logo: 'https://upload.wikimedia.org/wikipedia/commons/e/e9/FineArtAmerica_Logo.png' },
-    { name: 'Instagram', category: 'Social', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Instagram_logo_2016.svg/2048px-Instagram_logo_2016.svg.png' },
-    { name: 'Pinterest', category: 'Social', logo: 'https://upload.wikimedia.org/wikipedia/commons/0/08/Pinterest-logo.png' },
-    { name: 'TikTok', category: 'Social', logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/a/a9/TikTok_logo.svg/2560px-TikTok_logo.svg.png' },
-    { name: 'X (Twitter)', category: 'Social', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/ce/X_logo_2023.svg/2266px-X_logo_2023.svg.png' },
-    { name: 'Facebook', category: 'Social', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/2021_Facebook_icon.svg/2048px-2021_Facebook_icon.svg.png' },
+    { name: 'Adobe Stock', category: 'Stock', logo: ADOBE_STOCK_SVG },
+    { name: 'Getty Images', category: 'Stock', logo: GETTY_SVG },
+    { name: 'Shutterstock', category: 'Stock', logo: SHUTTERSTOCK_SVG },
+    { name: 'Unsplash', category: 'Stock', logo: 'https://cdn.simpleicons.org/unsplash/white' },
+    { name: '500px', category: 'Stock', logo: 'https://cdn.simpleicons.org/500px/white' },
+    { name: 'Etsy', category: 'Print', logo: 'https://cdn.simpleicons.org/etsy/white' },
+    { name: 'Redbubble', category: 'Print', logo: 'https://cdn.simpleicons.org/redbubble/white' },
+    { name: 'Shopify', category: 'Print', logo: 'https://cdn.simpleicons.org/shopify/white' },
+    { name: 'Squarespace', category: 'Print', logo: 'https://cdn.simpleicons.org/squarespace/white' },
+    { name: 'Instagram', category: 'Social', logo: 'https://cdn.simpleicons.org/instagram/white' },
+    { name: 'Pinterest', category: 'Social', logo: 'https://cdn.simpleicons.org/pinterest/white' },
+    { name: 'TikTok', category: 'Social', logo: 'https://cdn.simpleicons.org/tiktok/white' },
+    { name: 'X', category: 'Social', logo: 'https://cdn.simpleicons.org/x/white' },
+    { name: 'Facebook', category: 'Social', logo: 'https://cdn.simpleicons.org/facebook/white' },
 ];
 
 // Helper function
@@ -298,7 +303,8 @@ const LightBoxView: React.FC<{
   onNavigateToStudio: () => void;
   onSelectApiKey: () => void;
   onUploadNew: () => void;
-}> = ({ activeImage, setActiveImage, switchToEditView, connections, isApiKeySelected, setIsApiKeySelected, onPortfolioUpdate, onNavigateToStudio, onSelectApiKey, onUploadNew }) => {
+  aiSettings: AISettings;
+}> = ({ activeImage, setActiveImage, switchToEditView, connections, isApiKeySelected, setIsApiKeySelected, onPortfolioUpdate, onNavigateToStudio, onSelectApiKey, onUploadNew, aiSettings }) => {
   const [editingState, setEditingState] = useState({ isEditing: false, suggestion: '' });
   const [distributionStatus, setDistributionStatus] = useState<DistributionStatus[]>([]);
   const [distributionResult, setDistributionResult] = useState<DistributionResult | null>(null);
@@ -309,7 +315,8 @@ const LightBoxView: React.FC<{
       // Note: The caller should ensure loading state is set.
 
       try {
-          const analysisResult = await GeminiService.analyzeImage(imageData.base64, imageData.mimeType);
+          // Pass AI settings to customize critique tone and creativity level
+          const analysisResult = await GeminiService.analyzeImage(imageData.base64, imageData.mimeType, aiSettings);
           
           setActiveImage(prev => {
              // Ensure we are updating the correct image context
@@ -335,7 +342,7 @@ const LightBoxView: React.FC<{
               return prev;
           });
       }
-  }, [setActiveImage, onPortfolioUpdate]);
+  }, [setActiveImage, onPortfolioUpdate, aiSettings]);
 
   // Handle new file uploads
   const handleImageUpload = async (imageData: ImageData) => {
@@ -1712,14 +1719,15 @@ const RoutesView: React.FC = () => {
     );
 }
 
-const StudioView: React.FC<{ 
+const StudioView: React.FC<{
     onGenerate?: (concept: ShotConcept) => void;
     onSendToLightBox: (imageData: ImageData) => void;
-}> = ({ onGenerate, onSendToLightBox }) => {
+    aiSettings: AISettings;
+}> = ({ onGenerate, onSendToLightBox, aiSettings }) => {
     const [inputs, setInputs] = useState({ subject: '', location: '', mood: '', lighting: '' });
     const [concepts, setConcepts] = useState<ShotConcept[]>([]);
     const [isLoading, setIsLoading] = useState(false);
-    
+
     // New state for images
     const [conceptImages, setConceptImages] = useState<Record<number, ImageData | null>>({});
     const [conceptImageLoading, setConceptImageLoading] = useState<Record<number, boolean>>({});
@@ -1727,7 +1735,8 @@ const StudioView: React.FC<{
     const handleGenerate = async () => {
         setIsLoading(true);
         try {
-            const results = await GeminiService.generateShotConcepts(inputs);
+            // Pass AI settings to influence creativity level of generated concepts
+            const results = await GeminiService.generateShotConcepts(inputs, aiSettings);
             setConcepts(results);
             setConceptImages({}); // Clear previous
         } catch (e) {
@@ -1861,6 +1870,34 @@ const App: React.FC = () => {
     const [isApiKeySelected, setIsApiKeySelected] = useState(false);
     const [portfolioImages, setPortfolioImages] = useState<ActiveImage[]>([]);
 
+    // AI Settings with localStorage persistence
+    const [aiSettings, setAiSettings] = useState<AISettings>(() => {
+        const saved = localStorage.getItem('photon_ai_settings');
+        return saved ? JSON.parse(saved) : DEFAULT_AI_SETTINGS;
+    });
+
+    // Persist AI settings to localStorage
+    useEffect(() => {
+        localStorage.setItem('photon_ai_settings', JSON.stringify(aiSettings));
+    }, [aiSettings]);
+
+    // Check for existing access on mount (Option A: Client-side gating)
+    useEffect(() => {
+        const hasAccess = localStorage.getItem('photon_access') === 'true';
+        const savedEmail = localStorage.getItem('photon_email');
+        if (hasAccess && savedEmail) {
+            // Auto-login returning users
+            const returningUser: User = {
+                id: 'waitlist_returning',
+                email: savedEmail,
+                name: savedEmail.split('@')[0],
+                avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${savedEmail}`
+            };
+            setUser(returningUser);
+            setActiveView(AppView.LIGHT_BOX);
+        }
+    }, []);
+
     // Check for API key on mount
     useEffect(() => {
         const checkApiKey = async () => {
@@ -1874,6 +1911,19 @@ const App: React.FC = () => {
         };
         checkApiKey();
     }, []);
+
+    // Handle waitlist signup - auto-login as demo user
+    const handleWaitlistSignup = () => {
+        const email = localStorage.getItem('photon_email') || 'demo@photon.app';
+        const demoUser: User = {
+            id: 'waitlist_' + Date.now(),
+            email: email,
+            name: email.split('@')[0],
+            avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${email}`
+        };
+        setUser(demoUser);
+        setActiveView(AppView.LIGHT_BOX);
+    };
 
     const handleLoginSuccess = (loggedInUser: User) => {
         setUser(loggedInUser);
@@ -1928,9 +1978,9 @@ const App: React.FC = () => {
 
             <main>
                 {activeView === AppView.WELCOME && (
-                    <WelcomeScreen 
-                        onLogin={() => setActiveView(AppView.LOGIN)} 
-                        onSignup={() => setActiveView(AppView.LOGIN)} 
+                    <WelcomeScreen
+                        onLogin={() => setActiveView(AppView.LOGIN)}
+                        onSignup={handleWaitlistSignup}
                     />
                 )}
 
@@ -1941,11 +1991,11 @@ const App: React.FC = () => {
                 {user && (
                     <>
                         {activeView === AppView.LIGHT_BOX && (
-                            <LightBoxView 
-                                activeImage={activeImage} 
-                                setActiveImage={setActiveImage} 
+                            <LightBoxView
+                                activeImage={activeImage}
+                                setActiveImage={setActiveImage}
                                 switchToEditView={(imgData) => {
-                                    setActiveImage(prev => prev ? {...prev, data: imgData} : null); 
+                                    setActiveImage(prev => prev ? {...prev, data: imgData} : null);
                                     setActiveView(AppView.EDIT);
                                 }}
                                 connections={connections}
@@ -1955,6 +2005,7 @@ const App: React.FC = () => {
                                 onNavigateToStudio={() => setActiveView(AppView.STUDIO)}
                                 onSelectApiKey={() => (window as any).aistudio?.openSelectKey()}
                                 onUploadNew={() => setActiveImage(null)}
+                                aiSettings={aiSettings}
                             />
                         )}
 
@@ -1971,9 +2022,10 @@ const App: React.FC = () => {
                         )}
 
                         {activeView === AppView.STUDIO && (
-                            <StudioView 
-                                onGenerate={(concept) => console.log(concept)} 
+                            <StudioView
+                                onGenerate={(concept) => console.log(concept)}
                                 onSendToLightBox={(img) => handleSendToLightBox(img, false)}
+                                aiSettings={aiSettings}
                             />
                         )}
 
@@ -1986,11 +2038,13 @@ const App: React.FC = () => {
                         {activeView === AppView.PORTFOLIO && <PortfolioView portfolioImages={portfolioImages} />}
                         
                         {activeView === AppView.SETTINGS && (
-                            <SettingsView 
-                                connections={connections} 
+                            <SettingsView
+                                connections={connections}
                                 setConnections={setConnections}
                                 isApiKeySelected={isApiKeySelected}
                                 onConnectGoogleCloud={() => (window as any).aistudio?.openSelectKey()}
+                                aiSettings={aiSettings}
+                                setAiSettings={setAiSettings}
                             />
                         )}
                     </>

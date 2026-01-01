@@ -2,10 +2,28 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PhotonAgent.ai</title>
-    
+    <title>Photon - The Modern Creative Console</title>
+    <meta name="description" content="The operating system for creatives. Edit, curate, and distribute your photography with AI. Transform raw creativity into commercial-ready work." />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+
+    <!-- Open Graph / Social -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Photon - The Modern Creative Console" />
+    <meta property="og:description" content="The operating system for creatives. Edit, curate, and distribute your photography with AI." />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Photon - The Modern Creative Console" />
+    <meta name="twitter:description" content="The operating system for creatives. Edit, curate, and distribute your photography with AI." />
+    <meta name="twitter:image" content="/og-image.png" />
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -81,13 +99,272 @@
   ::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.2);
   }
-  
+
   body {
-    background-color: #05050A;
-    background-image: 
-      radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.08), transparent 25%), 
-      radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.08), transparent 25%);
+    background-color: #0D0906;
+    background-image:
+      radial-gradient(circle at 15% 50%, rgba(201, 169, 98, 0.06), transparent 30%),
+      radial-gradient(circle at 85% 30%, rgba(143, 175, 126, 0.05), transparent 30%),
+      radial-gradient(circle at 50% 80%, rgba(224, 123, 57, 0.04), transparent 25%);
     background-attachment: fixed;
+  }
+
+  /* Modern 2025 Background Animations */
+  @keyframes aurora {
+    0%, 100% {
+      transform: translateX(0%) translateY(0%) rotate(0deg);
+      opacity: 0.4;
+    }
+    25% {
+      transform: translateX(10%) translateY(-5%) rotate(1deg);
+      opacity: 0.6;
+    }
+    50% {
+      transform: translateX(-5%) translateY(5%) rotate(-1deg);
+      opacity: 0.5;
+    }
+    75% {
+      transform: translateX(-10%) translateY(-3%) rotate(0.5deg);
+      opacity: 0.45;
+    }
+  }
+
+  @keyframes float-orb {
+    0%, 100% {
+      transform: translateY(0px) translateX(0px) scale(1);
+    }
+    33% {
+      transform: translateY(-20px) translateX(10px) scale(1.02);
+    }
+    66% {
+      transform: translateY(10px) translateX(-10px) scale(0.98);
+    }
+  }
+
+  @keyframes grid-pulse {
+    0%, 100% {
+      opacity: 0.03;
+    }
+    50% {
+      opacity: 0.06;
+    }
+  }
+
+  @keyframes shimmer-line {
+    0% {
+      transform: translateX(-100%) translateY(-100%);
+    }
+    100% {
+      transform: translateX(100%) translateY(100%);
+    }
+  }
+
+  @keyframes particle-drift {
+    0% {
+      transform: translateY(0) translateX(0);
+      opacity: 0;
+    }
+    10% {
+      opacity: 0.6;
+    }
+    90% {
+      opacity: 0.6;
+    }
+    100% {
+      transform: translateY(-100vh) translateX(20px);
+      opacity: 0;
+    }
+  }
+
+  @keyframes glow-pulse {
+    0%, 100% {
+      filter: blur(60px) brightness(1);
+    }
+    50% {
+      filter: blur(80px) brightness(1.2);
+    }
+  }
+
+  @keyframes border-glow {
+    0%, 100% {
+      opacity: 0.3;
+      box-shadow: 0 0 10px rgba(201, 169, 98, 0.1);
+    }
+    50% {
+      opacity: 0.6;
+      box-shadow: 0 0 20px rgba(201, 169, 98, 0.2);
+    }
+  }
+
+  @keyframes text-shimmer {
+    0% {
+      background-position: -200% center;
+    }
+    100% {
+      background-position: 200% center;
+    }
+  }
+
+  /* Infinite scroll carousel */
+  @keyframes scroll-x {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-50%);
+    }
+  }
+
+  .animate-scroll-x {
+    animation: scroll-x 25s linear infinite;
+  }
+
+  /* Floating particles for hero */
+  @keyframes float-particle {
+    0%, 100% {
+      transform: translateY(0) translateX(0);
+      opacity: 0;
+    }
+    10% {
+      opacity: 0.8;
+    }
+    90% {
+      opacity: 0.8;
+    }
+    100% {
+      transform: translateY(-100vh) translateX(50px);
+      opacity: 0;
+    }
+  }
+
+  /* Mesh gradient animation */
+  @keyframes mesh-move {
+    0%, 100% {
+      transform: translate(0%, 0%) scale(1);
+    }
+    25% {
+      transform: translate(5%, -5%) scale(1.05);
+    }
+    50% {
+      transform: translate(-5%, 5%) scale(0.95);
+    }
+    75% {
+      transform: translate(-3%, -3%) scale(1.02);
+    }
+  }
+
+  /* ========== ORGANIC / TACTILE ANIMATIONS ========== */
+
+  /* Slow breathing - like lungs */
+  @keyframes breathe {
+    0%, 100% {
+      transform: scale(1);
+      opacity: 0.6;
+    }
+    50% {
+      transform: scale(1.08);
+      opacity: 0.8;
+    }
+  }
+
+  /* Light leak fade in/out */
+  @keyframes lightLeak {
+    0%, 100% {
+      opacity: 0;
+    }
+    15% {
+      opacity: 0.6;
+    }
+    35% {
+      opacity: 0.3;
+    }
+    50% {
+      opacity: 0.7;
+    }
+    70% {
+      opacity: 0.2;
+    }
+    85% {
+      opacity: 0.5;
+    }
+  }
+
+  /* Dust particle gentle float */
+  @keyframes dustFloat {
+    0%, 100% {
+      transform: translateY(0) translateX(0);
+    }
+    25% {
+      transform: translateY(-8px) translateX(4px);
+    }
+    50% {
+      transform: translateY(-4px) translateX(-6px);
+    }
+    75% {
+      transform: translateY(-12px) translateX(2px);
+    }
+  }
+
+  /* Rising dust motes */
+  @keyframes floatMote {
+    0% {
+      transform: translateY(0) translateX(0);
+      opacity: 0;
+    }
+    5% {
+      opacity: 0.5;
+    }
+    50% {
+      opacity: 0.3;
+    }
+    95% {
+      opacity: 0.4;
+    }
+    100% {
+      transform: translateY(-110vh) translateX(30px);
+      opacity: 0;
+    }
+  }
+
+  /* Staggered fade in animations */
+  @keyframes fadeInUp {
+    0% {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fadeInDown {
+    0% {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Subtle pulse for elements */
+  @keyframes gentlePulse {
+    0%, 100% {
+      opacity: 0.5;
+    }
+    50% {
+      opacity: 0.8;
+    }
+  }
+
+  /* Respect reduced motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+    }
   }
 </style>
 </head>

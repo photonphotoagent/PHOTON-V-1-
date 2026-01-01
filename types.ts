@@ -200,6 +200,18 @@ export interface EarningsData {
   recentSales: Sale[];
 }
 
+// --- AI Settings Types ---
+
+export interface AISettings {
+  critiqueLevel: number;      // 1-10: 1=Gentle, 10=Brutally Honest
+  creativityLevel: number;    // 1-10: 1=Safe/Realistic, 10=Wild/Abstract
+}
+
+export const DEFAULT_AI_SETTINGS: AISettings = {
+  critiqueLevel: 7,
+  creativityLevel: 5,
+};
+
 // --- Settings & Distribution Types ---
 
 export type PlatformName = 

@@ -1,5 +1,5 @@
 import { GoogleGenAI, Modality, Chat, Type } from "@google/genai";
-import { AnalysisResult, Workflow, ShotConcept, ImageAdjustments } from "../types";
+import { AnalysisResult, Workflow, ShotConcept, ImageAdjustments, AISettings, DEFAULT_AI_SETTINGS } from "../types";
 
 const fileToGenerativePart = (base64: string, mimeType: string) => {
   return {
@@ -10,8 +10,44 @@ const fileToGenerativePart = (base64: string, mimeType: string) => {
   };
 };
 
-// StoryBrand Guide Persona: A trusted mentor, clear, encouraging but honest.
-const AI_CURATOR_INSTRUCTIONS = `You are a world-class Creative Director and Mentor acting as a trusted guide for a photographer. Your goal is to help them succeed commercially and artistically. Your tone should be professional, encouraging, but brutally honest about what needs to improve to sell this work. You are not just a critic; you are a partner in their success.
+// Dynamic AI Curator Instructions based on user settings
+const getAICuratorInstructions = (settings: AISettings = DEFAULT_AI_SETTINGS): string => {
+  // Map critique level (1-10) to tone descriptions
+  const critiqueTones: Record<number, string> = {
+    1: "extremely gentle and supportive. Focus only on positives, avoid criticism.",
+    2: "very gentle. Emphasize strengths, mention improvements as gentle suggestions.",
+    3: "supportive and encouraging. Balance praise with soft constructive feedback.",
+    4: "friendly and constructive. Give balanced feedback with a positive spin.",
+    5: "professional and balanced. Mix encouragement with honest constructive criticism.",
+    6: "direct and professional. Be clear about both strengths and weaknesses.",
+    7: "candid and honest. Don't sugarcoat issues, but remain respectful.",
+    8: "blunt and straightforward. Tell them exactly what's wrong and how to fix it.",
+    9: "very direct and demanding. High standards, point out all flaws clearly.",
+    10: "brutally honest like a demanding art director. No sugarcoating, maximum honesty."
+  };
+
+  // Map creativity level (1-10) to creative remix style
+  const creativityStyles: Record<number, string> = {
+    1: "very safe and realistic. Stick to minimal, practical edits that are commercially proven.",
+    2: "conservative. Suggest subtle enhancements that don't dramatically change the image.",
+    3: "moderately safe. Recommend proven styles with slight creative touches.",
+    4: "balanced. Mix practical commercial styles with some creative flair.",
+    5: "moderately creative. Blend commercial viability with interesting artistic choices.",
+    6: "creative. Push boundaries while maintaining some commercial appeal.",
+    7: "adventurous. Suggest bold transformations that make the image stand out.",
+    8: "highly creative. Recommend dramatic, eye-catching transformations.",
+    9: "very experimental. Push into avant-garde and unusual aesthetic territory.",
+    10: "wildly abstract and experimental. Maximum creativity, surreal transformations, break all rules."
+  };
+
+  const critiqueTone = critiqueTones[settings.critiqueLevel] || critiqueTones[7];
+  const creativityStyle = creativityStyles[settings.creativityLevel] || creativityStyles[5];
+
+  return `You are a world-class Creative Director and Mentor acting as a trusted guide for a photographer. Your goal is to help them succeed commercially and artistically.
+
+PERSONALITY CALIBRATION:
+- Your feedback tone should be: ${critiqueTone}
+- Your creative suggestions should be: ${creativityStyle}
 
 Your output MUST be a single JSON object that strictly adheres to the provided schema. No other text.
 
@@ -30,21 +66,27 @@ Creative Remixes (The Transformation):
 - Category 'Commercial': Clean, stock-photo ready styles (e.g. "Bright & Airy", "Corporate Minimal", "Studio Lighting").
 - Category 'Artistic': Fine art styles for print (e.g. "Charcoal Sketch", "Impressionist", "Double Exposure").
 - Category 'Fantasy': Bold transformations (e.g. "Cyberpunk", "Post-Apocalyptic", "Ethereal").
+- IMPORTANT: Adjust the boldness/creativity of these remixes based on your creativity calibration above.
 
 Market Comparison (The Reality Check):
-- Explain why similar images sell. Be specific about the "Why".`;
+- Explain why similar images sell. Be specific about the "Why".
+- Match your tone to your personality calibration above.`;
+};
 
 
-export const analyzeImage = async (imageBase64: string, mimeType: string): Promise<AnalysisResult> => {
+export const analyzeImage = async (imageBase64: string, mimeType: string, aiSettings?: AISettings): Promise<AnalysisResult> => {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const imagePart = fileToGenerativePart(imageBase64, mimeType);
     const textPart = { text: "Analyze this image. Guide me on how to improve and sell it." };
-    
+
+    // Use dynamic instructions based on user's AI personality settings
+    const instructions = getAICuratorInstructions(aiSettings || DEFAULT_AI_SETTINGS);
+
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: { parts: [textPart, imagePart] },
         config: {
-          systemInstruction: AI_CURATOR_INSTRUCTIONS,
+          systemInstruction: instructions,
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
@@ -350,15 +392,35 @@ export const executeWorkflowStep = async (stepName: string, stepDescription: str
 };
 
 export const generateShotConcepts = async (
-    inputs: { subject: string; location: string; mood: string; lighting: string }
+    inputs: { subject: string; location: string; mood: string; lighting: string },
+    aiSettings?: AISettings
 ): Promise<ShotConcept[]> => {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const prompt = `You are a high-concept Creative Director for photography. 
+    const settings = aiSettings || DEFAULT_AI_SETTINGS;
+
+    // Adjust creativity description based on slider
+    const creativityDescriptions: Record<number, string> = {
+        1: "extremely safe and conventional",
+        2: "very practical and proven",
+        3: "safe with subtle creative touches",
+        4: "balanced between practical and creative",
+        5: "moderately creative",
+        6: "creative and boundary-pushing",
+        7: "adventurous and bold",
+        8: "highly experimental",
+        9: "avant-garde and unusual",
+        10: "wildly experimental and abstract"
+    };
+    const creativityDesc = creativityDescriptions[settings.creativityLevel] || creativityDescriptions[5];
+
+    const prompt = `You are a high-concept Creative Director for photography.
     The photographer wants to shoot a "${inputs.subject}" in a "${inputs.location}" with "${inputs.mood}" vibes and "${inputs.lighting}" lighting.
-    
+
+    CREATIVITY LEVEL: Your concepts should be ${creativityDesc}.
+
     Based on these "mad libs" style inputs, generate 3 distinct, high-quality photography concepts.
-    They should be practical but creative.
-    
+    Adjust the creativity and boldness of your suggestions to match the creativity level above.
+
     Return a JSON object with a list of concepts strictly adhering to the schema.`;
 
     const response = await ai.models.generateContent({

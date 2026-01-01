@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Connections, Platform, PlatformName } from '../types';
+import { Connections, Platform, PlatformName, AISettings } from '../types';
 import { platforms } from '../App';
 import { SettingsIcon, EyeIcon, BoltIcon, ArrowDownTrayIcon, GoogleIcon, CheckCircleIcon } from './icons';
 
@@ -53,11 +53,11 @@ export const SettingsView: React.FC<{
     setConnections: React.Dispatch<React.SetStateAction<Connections>>;
     isApiKeySelected: boolean;
     onConnectGoogleCloud: () => void;
-}> = ({ connections, setConnections, isApiKeySelected, onConnectGoogleCloud }) => {
-    
-    // Mock local state for settings (would persist to DB in production)
-    const [critiqueLevel, setCritiqueLevel] = useState(7);
-    const [creativityLevel, setCreativityLevel] = useState(5);
+    aiSettings: AISettings;
+    setAiSettings: React.Dispatch<React.SetStateAction<AISettings>>;
+}> = ({ connections, setConnections, isApiKeySelected, onConnectGoogleCloud, aiSettings, setAiSettings }) => {
+
+    // Notification preferences (local state - could be persisted separately)
     const [emailDigest, setEmailDigest] = useState(true);
     const [salesAlerts, setSalesAlerts] = useState(true);
     const [trendAlerts, setTrendAlerts] = useState(false);
@@ -172,21 +172,23 @@ export const SettingsView: React.FC<{
                         <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 space-y-6">
                              <p className="text-sm text-gray-400">Tune how your Mentor interacts with your work.</p>
                              
-                             <RangeSlider 
+                             <RangeSlider
                                 label="Critique Intensity"
                                 leftLabel="Gentle & Supportive"
                                 rightLabel="Brutally Honest"
-                                value={critiqueLevel}
-                                onChange={setCritiqueLevel}
+                                value={aiSettings.critiqueLevel}
+                                onChange={(val) => setAiSettings(prev => ({ ...prev, critiqueLevel: val }))}
                              />
 
-                             <RangeSlider 
+                             <RangeSlider
                                 label="Generative Creativity"
                                 leftLabel="Safe & Realistic"
                                 rightLabel="Wild & Abstract"
-                                value={creativityLevel}
-                                onChange={setCreativityLevel}
+                                value={aiSettings.creativityLevel}
+                                onChange={(val) => setAiSettings(prev => ({ ...prev, creativityLevel: val }))}
                              />
+
+                             <p className="text-xs text-green-400 mt-2">✓ Settings auto-save and apply to all AI outputs</p>
                         </div>
                     </section>
 

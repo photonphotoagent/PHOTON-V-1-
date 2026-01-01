@@ -1,0 +1,45 @@
+<svg width="320" height="80" viewBox="0 0 320 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Gradient for fingerprint icon (orange top to green bottom) -->
+    <linearGradient id="fingerprintGradient" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#faaa4b"/>
+      <stop offset="40%" stop-color="#d4c478"/>
+      <stop offset="100%" stop-color="#b3d8a5"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Fingerprint Circle Icon -->
+  <g transform="translate(6, 6)">
+    <!-- Outer circle -->
+    <circle cx="34" cy="34" r="32" fill="none" stroke="url(#fingerprintGradient)" stroke-width="3.5"/>
+
+    <!-- Fingerprint lines - curved arcs spiraling inward from left -->
+    <g fill="none" stroke="url(#fingerprintGradient)" stroke-width="3" stroke-linecap="round">
+      <!-- Arc 1 - outermost, starts from top-left area -->
+      <path d="M18 18 C10 28, 10 44, 18 54"/>
+
+      <!-- Arc 2 -->
+      <path d="M24 14 C12 28, 12 46, 24 58"/>
+
+      <!-- Arc 3 -->
+      <path d="M32 12 C16 24, 14 48, 30 60"/>
+
+      <!-- Arc 4 -->
+      <path d="M40 14 C22 24, 18 48, 36 58"/>
+
+      <!-- Arc 5 -->
+      <path d="M48 18 C28 26, 24 46, 42 54"/>
+
+      <!-- Arc 6 - inner -->
+      <path d="M52 26 C36 32, 32 44, 46 50"/>
+
+      <!-- Arc 7 - innermost core -->
+      <path d="M52 34 C44 38, 42 44, 48 48"/>
+    </g>
+  </g>
+
+  <!-- Text: "photon" as single word with proper kerning -->
+  <text x="82" y="54" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="42" font-weight="500">
+    <tspan fill="#b3d8a5">phot</tspan><tspan fill="#faaa4b">on</tspan>
+  </text>
+</svg>

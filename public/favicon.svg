@@ -1,0 +1,29 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="fingerprintGradient" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#faaa4b"/>
+      <stop offset="40%" stop-color="#d4c478"/>
+      <stop offset="100%" stop-color="#b3d8a5"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <circle cx="256" cy="256" r="256" fill="#0D0906"/>
+
+  <!-- Fingerprint Circle Icon - scaled up -->
+  <g transform="translate(86, 86) scale(5)">
+    <!-- Outer circle -->
+    <circle cx="34" cy="34" r="32" fill="none" stroke="url(#fingerprintGradient)" stroke-width="3.5"/>
+
+    <!-- Fingerprint lines -->
+    <g fill="none" stroke="url(#fingerprintGradient)" stroke-width="3" stroke-linecap="round">
+      <path d="M18 18 C10 28, 10 44, 18 54"/>
+      <path d="M24 14 C12 28, 12 46, 24 58"/>
+      <path d="M32 12 C16 24, 14 48, 30 60"/>
+      <path d="M40 14 C22 24, 18 48, 36 58"/>
+      <path d="M48 18 C28 26, 24 46, 42 54"/>
+      <path d="M52 26 C36 32, 32 44, 46 50"/>
+      <path d="M52 34 C44 38, 42 44, 48 48"/>
+    </g>
+  </g>
+</svg>

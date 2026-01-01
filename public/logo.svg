@@ -1,0 +1,91 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Main gradient -->
+    <linearGradient id="mainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="50%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#a855f7"/>
+    </linearGradient>
+
+    <!-- Glow gradient -->
+    <linearGradient id="glowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#818cf8"/>
+      <stop offset="100%" stop-color="#c084fc"/>
+    </linearGradient>
+
+    <!-- Inner glow -->
+    <radialGradient id="innerGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#c4b5fd" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#6366f1" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Drop shadow filter -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Outer glow -->
+    <filter id="outerGlow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="20" result="blur"/>
+      <feFlood flood-color="#8b5cf6" flood-opacity="0.5"/>
+      <feComposite in2="blur" operator="in"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background circle with subtle glow -->
+  <circle cx="256" cy="256" r="240" fill="#05050A"/>
+  <circle cx="256" cy="256" r="240" fill="url(#innerGlow)"/>
+
+  <!-- Outer ring -->
+  <circle cx="256" cy="256" r="220" fill="none" stroke="url(#mainGradient)" stroke-width="3" opacity="0.3"/>
+
+  <!-- Aperture blades - creating a camera lens look -->
+  <g filter="url(#glow)" opacity="0.15">
+    <path d="M256 80 L310 180 L256 160 Z" fill="url(#glowGradient)"/>
+    <path d="M256 80 L202 180 L256 160 Z" fill="url(#glowGradient)"/>
+    <path d="M408.5 168 L340 240 L350 185 Z" fill="url(#glowGradient)"/>
+    <path d="M103.5 168 L172 240 L162 185 Z" fill="url(#glowGradient)"/>
+    <path d="M408.5 344 L340 272 L350 327 Z" fill="url(#glowGradient)"/>
+    <path d="M103.5 344 L172 272 L162 327 Z" fill="url(#glowGradient)"/>
+    <path d="M256 432 L310 332 L256 352 Z" fill="url(#glowGradient)"/>
+    <path d="M256 432 L202 332 L256 352 Z" fill="url(#glowGradient)"/>
+  </g>
+
+  <!-- Central lightning bolt - the "Photon" symbol -->
+  <g filter="url(#outerGlow)">
+    <path
+      d="M280 120
+         L220 235
+         L270 235
+         L195 400
+         L260 260
+         L210 260
+         L280 120 Z"
+      fill="url(#mainGradient)"
+    />
+  </g>
+
+  <!-- Highlight on bolt -->
+  <path
+    d="M265 140
+       L225 230
+       L255 230
+       L265 140 Z"
+    fill="white"
+    opacity="0.3"
+  />
+
+  <!-- Small energy dots -->
+  <circle cx="320" cy="200" r="4" fill="#a5b4fc" opacity="0.8"/>
+  <circle cx="180" cy="320" r="3" fill="#c4b5fd" opacity="0.6"/>
+  <circle cx="340" cy="300" r="2.5" fill="#818cf8" opacity="0.7"/>
+  <circle cx="165" cy="220" r="3" fill="#a78bfa" opacity="0.5"/>
+</svg>
