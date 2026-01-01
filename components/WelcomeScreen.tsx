@@ -166,22 +166,15 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onSignup, onLogin 
                     </div>
 
                     {/* Headline - refined sizing */}
-                    <h1 className="font-display font-extrabold tracking-tight leading-[1] mb-6 text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.8)]">
+                    <h1 className="font-display font-extrabold tracking-tight leading-[1] mb-10 text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.8)]">
                         <span className="block text-lg md:text-xl lg:text-2xl opacity-0 text-[#A89F91] font-medium tracking-[0.2em] uppercase mb-2" style={{animation: 'fadeInUp 0.8s ease-out forwards', animationDelay: '0.4s'}}>the modern creative</span>
                         <span className="block text-5xl md:text-7xl lg:text-8xl text-transparent bg-clip-text bg-[length:200%_auto] bg-gradient-to-r from-[#C9A962] via-[#E07B39] via-50% to-[#C9A962] opacity-0 uppercase tracking-tight font-black" style={{animation: 'fadeInUp 0.8s ease-out forwards, text-shimmer 4s linear infinite', animationDelay: '0.6s'}}>Console</span>
                     </h1>
 
-                    <p
-                        className="max-w-xl mx-auto text-base md:text-lg text-[#E8E2D6]/90 mb-10 leading-relaxed font-light opacity-0 drop-shadow-[0_2px_10px_rgba(0,0,0,0.6)]"
-                        style={{animation: 'fadeInUp 0.8s ease-out forwards', animationDelay: '0.8s'}}
-                    >
-                        AI-powered editing, curation, and distribution for photographers. Transform your work into income.
-                    </p>
-
                     {/* Email Signup Form */}
                     <div
                         className="w-full max-w-md mx-auto opacity-0"
-                        style={{animation: 'fadeInUp 0.8s ease-out forwards', animationDelay: '1s'}}
+                        style={{animation: 'fadeInUp 0.8s ease-out forwards', animationDelay: '0.8s'}}
                     >
                         {submitStatus === 'success' ? (
                             <div className="flex items-center justify-center gap-3 py-5 px-6 bg-[#8FAF7E]/20 border border-[#8FAF7E]/40 rounded-2xl backdrop-blur-md">
@@ -224,7 +217,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onSignup, onLogin 
 
                     <p
                         className="mt-6 text-sm text-[#A89F91] font-medium flex items-center justify-center gap-3 opacity-0 drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]"
-                        style={{animation: 'fadeInUp 0.8s ease-out forwards', animationDelay: '1.2s'}}
+                        style={{animation: 'fadeInUp 0.8s ease-out forwards', animationDelay: '1s'}}
                     >
                         <span className="flex items-center gap-1.5"><CheckCircleIcon className="w-4 h-4 text-[#8FAF7E]" />Free early access</span>
                         <span className="text-[#3D2E1F]">•</span>
@@ -234,7 +227,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onSignup, onLogin 
                     {/* Already have access link */}
                     <p
                         className="mt-4 text-sm text-[#6B6358] opacity-0"
-                        style={{animation: 'fadeInUp 0.8s ease-out forwards', animationDelay: '1.3s'}}
+                        style={{animation: 'fadeInUp 0.8s ease-out forwards', animationDelay: '1.1s'}}
                     >
                         Already have access?{' '}
                         <button onClick={onLogin} className="text-[#C9A962] hover:text-[#E07B39] underline underline-offset-2 transition-colors">
