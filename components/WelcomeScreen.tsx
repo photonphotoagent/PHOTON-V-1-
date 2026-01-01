@@ -242,40 +242,6 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onSignup, onLogin 
                         </button>
                     </p>
                 </div>
-
-                {/* Hero Image - with film/photo aesthetic */}
-                <div
-                    className="w-full max-w-5xl mx-auto mt-16 px-4 relative opacity-0"
-                    style={{animation: 'fadeInUp 1s ease-out forwards', animationDelay: '1.4s'}}
-                >
-                    <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-black/40 border border-[#3D2E1F]/60 group">
-                        {/* Photo frame texture */}
-                        <div className="absolute inset-0 z-10 pointer-events-none border-[8px] border-[#1a150f]/20 rounded-2xl"></div>
-
-                        <img
-                            src="/creative-image-2.jpg"
-                            alt="Photon - The Artist's Conscious Archive"
-                            className="w-full h-auto object-cover transition-transform duration-1000 group-hover:scale-[1.03]"
-                        />
-
-                        {/* Film grain overlay on image */}
-                        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.12] pointer-events-none mix-blend-overlay"></div>
-
-                        {/* Light leak on image */}
-                        <div className="absolute top-0 right-0 w-[40%] h-[60%] bg-gradient-to-bl from-[#E8A855]/15 to-transparent pointer-events-none" style={{animation: 'breathe 15s ease-in-out infinite'}}></div>
-
-                        {/* Bottom fade */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#0D0906]/70 via-transparent to-[#0D0906]/20 pointer-events-none"></div>
-
-                        {/* Corner dust spots */}
-                        <div className="absolute top-[10%] left-[8%] w-1 h-1 rounded-full bg-white/20 blur-[0.5px]"></div>
-                        <div className="absolute top-[15%] right-[12%] w-[2px] h-[2px] rounded-full bg-white/15"></div>
-                        <div className="absolute bottom-[20%] left-[15%] w-1 h-1 rounded-full bg-white/10"></div>
-                    </div>
-
-                    {/* Soft glow behind image */}
-                    <div className="absolute -inset-4 bg-gradient-to-r from-[#C9A962]/10 via-transparent to-[#8FAF7E]/10 blur-2xl -z-10 opacity-50"></div>
-                </div>
             </div>
 
             {/* Organic transition: Hero to Ticker - soft gradient blend */}

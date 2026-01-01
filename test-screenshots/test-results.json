@@ -1,0 +1,232 @@
+{
+  "passed": [
+    {
+      "name": "Logo/Brand is visible",
+      "details": "",
+      "timestamp": "2026-01-01T03:43:13.971Z"
+    },
+    {
+      "name": "Hero headline is visible",
+      "details": "",
+      "timestamp": "2026-01-01T03:43:13.972Z"
+    },
+    {
+      "name": "CTA buttons are visible",
+      "details": "",
+      "timestamp": "2026-01-01T03:43:13.973Z"
+    },
+    {
+      "name": "Platform logos are loading",
+      "details": "Found 5 images",
+      "timestamp": "2026-01-01T03:43:13.977Z"
+    },
+    {
+      "name": "Login button is visible",
+      "details": "",
+      "timestamp": "2026-01-01T03:43:13.977Z"
+    },
+    {
+      "name": "Email input field exists",
+      "details": "",
+      "timestamp": "2026-01-01T03:43:15.770Z"
+    },
+    {
+      "name": "Password input field exists",
+      "details": "",
+      "timestamp": "2026-01-01T03:43:15.771Z"
+    },
+    {
+      "name": "Google login option exists",
+      "details": "",
+      "timestamp": "2026-01-01T03:43:15.771Z"
+    },
+    {
+      "name": "Login form submission works",
+      "details": "",
+      "timestamp": "2026-01-01T03:43:18.165Z"
+    },
+    {
+      "name": "Signup Step 1: Email input exists",
+      "details": "",
+      "timestamp": "2026-01-01T03:43:21.472Z"
+    },
+    {
+      "name": "Signup Step 1: Password input exists",
+      "details": "",
+      "timestamp": "2026-01-01T03:43:21.472Z"
+    },
+    {
+      "name": "Main app loaded after signup",
+      "details": "",
+      "timestamp": "2026-01-01T03:43:25.738Z"
+    },
+    {
+      "name": "Navigation to Light Box works",
+      "details": "",
+      "timestamp": "2026-01-01T03:43:26.669Z"
+    },
+    {
+      "name": "Navigation to Portfolio works",
+      "details": "",
+      "timestamp": "2026-01-01T03:43:27.612Z"
+    },
+    {
+      "name": "Navigation to Earnings works",
+      "details": "",
+      "timestamp": "2026-01-01T03:43:28.556Z"
+    },
+    {
+      "name": "Navigation to Editor works",
+      "details": "",
+      "timestamp": "2026-01-01T03:43:29.492Z"
+    },
+    {
+      "name": "Navigation to Studio works",
+      "details": "",
+      "timestamp": "2026-01-01T03:43:30.432Z"
+    },
+    {
+      "name": "Navigation to Routes works",
+      "details": "",
+      "timestamp": "2026-01-01T03:43:31.369Z"
+    },
+    {
+      "name": "Navigation to Settings works",
+      "details": "",
+      "timestamp": "2026-01-01T03:43:32.313Z"
+    },
+    {
+      "name": "Settings: Google Cloud section visible",
+      "details": "",
+      "timestamp": "2026-01-01T03:43:34.234Z"
+    },
+    {
+      "name": "Earnings: Chart is rendered",
+      "details": "",
+      "timestamp": "2026-01-01T03:43:34.867Z"
+    },
+    {
+      "name": "Mobile: No horizontal scroll issues",
+      "details": "",
+      "timestamp": "2026-01-01T03:43:37.332Z"
+    },
+    {
+      "name": "Error Handling: Form validation works",
+      "details": "",
+      "timestamp": "2026-01-01T03:43:40.009Z"
+    },
+    {
+      "name": "Error Handling: Invalid email validation works",
+      "details": "",
+      "timestamp": "2026-01-01T03:43:40.348Z"
+    }
+  ],
+  "failed": [
+    {
+      "name": "Signup Step 1: Name input exists",
+      "details": "",
+      "timestamp": "2026-01-01T03:43:21.472Z"
+    },
+    {
+      "name": "Signup Step 2: Experience options visible",
+      "details": "",
+      "timestamp": "2026-01-01T03:43:21.473Z"
+    },
+    {
+      "name": "Signup Step 3: Archive size options visible",
+      "details": "",
+      "timestamp": "2026-01-01T03:43:22.609Z"
+    },
+    {
+      "name": "Light Box: Upload area is visible",
+      "details": "",
+      "timestamp": "2026-01-01T03:43:32.949Z"
+    },
+    {
+      "name": "Light Box: File input exists",
+      "details": "",
+      "timestamp": "2026-01-01T03:43:32.949Z"
+    },
+    {
+      "name": "Editor: Upload prompt visible",
+      "details": "",
+      "timestamp": "2026-01-01T03:43:33.592Z"
+    },
+    {
+      "name": "Settings: Page loaded correctly",
+      "details": "",
+      "timestamp": "2026-01-01T03:43:34.234Z"
+    },
+    {
+      "name": "Settings: Platform toggles exist",
+      "details": "Found 0 toggles",
+      "timestamp": "2026-01-01T03:43:34.235Z"
+    },
+    {
+      "name": "Earnings: Dashboard loaded",
+      "details": "",
+      "timestamp": "2026-01-01T03:43:34.866Z"
+    },
+    {
+      "name": "Portfolio: Page loaded correctly",
+      "details": "",
+      "timestamp": "2026-01-01T03:43:35.508Z"
+    },
+    {
+      "name": "Portfolio: Empty state message shown",
+      "details": "",
+      "timestamp": "2026-01-01T03:43:35.508Z"
+    },
+    {
+      "name": "Studio: Page loaded correctly",
+      "details": "",
+      "timestamp": "2026-01-01T03:43:36.141Z"
+    },
+    {
+      "name": "Routes: Page loaded correctly",
+      "details": "",
+      "timestamp": "2026-01-01T03:43:36.777Z"
+    },
+    {
+      "name": "Profile: Avatar image exists",
+      "details": "Avatar not found",
+      "timestamp": "2026-01-01T03:43:36.778Z"
+    },
+    {
+      "name": "Mobile: Navigation adapts to mobile",
+      "details": "",
+      "timestamp": "2026-01-01T03:43:37.331Z"
+    }
+  ],
+  "warnings": [
+    {
+      "name": "Some images may not be loading",
+      "details": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/Adobe_Stock_logo.svg/2560px-Adobe_Stock_logo.svg.png, https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Getty_Images_logo.svg/2560px-Getty_Images_logo.svg.png, https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Shutterstock_logo.svg/2560px-Shutterstock_logo.svg.png, https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Etsy_logo.svg/2560px-Etsy_logo.svg.png",
+      "timestamp": "2026-01-01T03:43:13.977Z"
+    }
+  ],
+  "screenshots": [
+    "/Users/gabe/photon-app/test-screenshots/01-welcome-screen.png",
+    "/Users/gabe/photon-app/test-screenshots/02-login-screen.png",
+    "/Users/gabe/photon-app/test-screenshots/03-login-form-filled.png",
+    "/Users/gabe/photon-app/test-screenshots/04-after-login-attempt.png",
+    "/Users/gabe/photon-app/test-screenshots/05-signup-step1.png",
+    "/Users/gabe/photon-app/test-screenshots/08-signup-step3.png",
+    "/Users/gabe/photon-app/test-screenshots/09-after-signup.png",
+    "/Users/gabe/photon-app/test-screenshots/10-nav-light-box.png",
+    "/Users/gabe/photon-app/test-screenshots/10-nav-portfolio.png",
+    "/Users/gabe/photon-app/test-screenshots/10-nav-earnings.png",
+    "/Users/gabe/photon-app/test-screenshots/10-nav-editor.png",
+    "/Users/gabe/photon-app/test-screenshots/10-nav-studio.png",
+    "/Users/gabe/photon-app/test-screenshots/10-nav-routes.png",
+    "/Users/gabe/photon-app/test-screenshots/10-nav-settings.png",
+    "/Users/gabe/photon-app/test-screenshots/11-lightbox-view.png",
+    "/Users/gabe/photon-app/test-screenshots/12-editor-view.png",
+    "/Users/gabe/photon-app/test-screenshots/13-settings-view.png",
+    "/Users/gabe/photon-app/test-screenshots/14-earnings-view.png",
+    "/Users/gabe/photon-app/test-screenshots/15-portfolio-view.png",
+    "/Users/gabe/photon-app/test-screenshots/16-studio-view.png",
+    "/Users/gabe/photon-app/test-screenshots/17-routes-view.png",
+    "/Users/gabe/photon-app/test-screenshots/19-mobile-view.png"
+  ]
+}
