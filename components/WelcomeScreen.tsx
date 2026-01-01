@@ -314,62 +314,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onSignup, onLogin 
                 </div>
             </div>
 
-            {/* ==================== VIDEO SHOWCASE SECTION ==================== */}
-            <div className="relative bg-[#F5F0E6] py-20 overflow-hidden">
-                {/* Background textures */}
-                <div className="absolute inset-0 bg-gradient-to-b from-[#F5F0E6] via-[#EDE8DC] to-[#F5F0E6]"></div>
-                <div className="absolute inset-0 bg-[url('/textures/paper-fibers-1.png')] bg-cover bg-center opacity-[0.5]" style={{mixBlendMode: 'multiply'}}></div>
-                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.15]" style={{mixBlendMode: 'overlay'}}></div>
-
-                <div className="max-w-5xl mx-auto px-4 relative z-10">
-                    <div className="text-center mb-10">
-                        <p className="text-xs font-bold text-[#8B7355] uppercase tracking-[0.25em] mb-3">See it in action</p>
-                        <h2 className="text-3xl md:text-4xl font-display font-bold text-[#1A1410] leading-tight">
-                            Built for <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#C9A962] to-[#E07B39]">Photographers</span>
-                        </h2>
-                    </div>
-
-                    {/* Video Container */}
-                    <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-black/20 border border-[#3D2E1F]/20 group">
-                        {/* Film frame aesthetic border */}
-                        <div className="absolute inset-0 z-10 pointer-events-none border-[6px] border-[#1a150f]/10 rounded-2xl"></div>
-
-                        {/* Video element - Pexels free stock video */}
-                        <video
-                            autoPlay
-                            loop
-                            muted
-                            playsInline
-                            className="w-full h-auto aspect-video object-cover"
-                            poster="/creative-image-2.jpg"
-                        >
-                            <source src="https://videos.pexels.com/video-files/1858314/1858314-hd_1920_1080_25fps.mp4" type="video/mp4" />
-                            Your browser does not support the video tag.
-                        </video>
-
-                        {/* Film grain overlay */}
-                        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.1] pointer-events-none mix-blend-overlay"></div>
-
-                        {/* Light leak effect */}
-                        <div className="absolute top-0 right-0 w-[35%] h-[50%] bg-gradient-to-bl from-[#E8A855]/10 to-transparent pointer-events-none" style={{animation: 'breathe 12s ease-in-out infinite'}}></div>
-
-                        {/* Bottom gradient for text */}
-                        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-black/40 to-transparent pointer-events-none"></div>
-
-                        {/* Video credit */}
-                        <div className="absolute bottom-4 right-4 text-white/60 text-xs font-medium z-20">
-                            Video by Griffin Wooldridge • Pexels
-                        </div>
-                    </div>
-
-                    {/* Caption */}
-                    <p className="text-center text-[#6B5344] text-sm mt-6 font-medium">
-                        From capture to commercial-ready — all in one workflow
-                    </p>
-                </div>
-            </div>
-
-            {/* Organic transition: Video to Why Photon - soft blend */}
+            {/* Organic transition: Ticker to Why Photon - soft blend */}
             <div className="relative h-32 -mt-1">
                 <div className="absolute inset-0 bg-gradient-to-b from-[#F5F0E6] via-[#F5F0E6]/60 to-transparent"></div>
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#0D0906]/40 to-[#0D0906]"></div>
